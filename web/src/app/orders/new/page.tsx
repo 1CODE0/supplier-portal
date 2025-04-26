@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { TextField, Button, Paper, Typography, Box } from '@mui/material'
 import { useRouter } from 'next/navigation'
-import { useOrders, NewOrder } from '@/hooks/useOrders'
+import { useOrders } from '@/hooks/useOrders'
 import { orderInputSchema, OrderInput } from '@/api/models'
 
 export default function NewOrderPage() {
@@ -21,7 +21,7 @@ export default function NewOrderPage() {
 
   const onSubmit = async (data: OrderInput) => {
     console.log('🚀 ~ page.tsx:25 ~ onSubmit ~ data:', data)
-    await createOrder.mutateAsync(data as NewOrder)
+    await createOrder.mutateAsync(data)
     router.push('/orders')
   }
 

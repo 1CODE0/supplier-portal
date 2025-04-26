@@ -3,9 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export type Order = {
-    id?: number;
-    supplier?: string;
-    amount?: number;
-    createdAt?: string;
-};
-
+  id?: number
+  supplier: string
+  amount: number
+  createdAt?: string
+}
