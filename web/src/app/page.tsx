@@ -1,7 +1,13 @@
-import React from 'react'
+// web/app/layout.tsx
+import './globals.css'
+import { Providers } from '../providers'
 
-const Home = () => {
-  return <div>Hello from Web</div>
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang='en'>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
 }
-
-export default Home
