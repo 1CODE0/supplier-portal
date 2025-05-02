@@ -1,7 +1,7 @@
 package com.portal.controller;
 
 import com.portal.model.Order;
-import com.portal.repository.OrderRepository;
+import com.portal.service.OrderService;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -11,19 +11,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-    public final OrderRepository repo;
+    public final OrderService service;
 
-    public OrderController(OrderRepository repo) {
-        this.repo = repo;
+    public OrderController(OrderService service) {
+        this.service = service;
     }
 
     @PostMapping
-    public Order create(@RequestBody Order order) {
-        return repo.save(order);
+    public Order createOrder(@RequestBody Order order) {
+        return service.createOrderService(order);
     }
 
     @GetMapping
-    public List<Order> list() {
-        return repo.findAll();
+    public List<Order> listOrders() {
+        return service.listOrderService();
     }
 }

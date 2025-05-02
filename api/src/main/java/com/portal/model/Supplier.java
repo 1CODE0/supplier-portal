@@ -1,27 +1,23 @@
-// src/main/java/com/portal/model/Order.java
+// src/main/java/com/portal/model/Supplier.java
 package com.portal.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Entity
-@Table(name = "orders")
-public class Order {
+@Table(name = "suppliers")
+public class Supplier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "supplier_id", nullable = false)
-    private Supplier supplier;
-
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal amount;
+    @Column(name = "supplier_name", nullable = false)
+    private String supplierName;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -35,6 +31,9 @@ public class Order {
     @Column(name = "version", nullable = false)
     private Integer version;
 
+    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Order> orders;
+
     public Long getId() {
         return id;
     }
@@ -43,20 +42,12 @@ public class Order {
         this.id = id;
     }
 
-    public Supplier getSupplier() {
-        return supplier;
+    public String getSupplierName() {
+        return supplierName;
     }
 
-    public void setSupplier(Supplier supplier) {
-        this.supplier = supplier;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
     }
 
     public Instant getCreatedAt() {
@@ -81,6 +72,14 @@ public class Order {
 
     public void setVersion(Integer version) {
         this.version = version;
+    }
+
+    public List<Order> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(List<Order> orders) {
+        this.orders = orders;
     }
 
 }
