@@ -47,7 +47,7 @@ public class OrderService {
 
         o.setSupplier(supplier);
         o.setOrderDate(LocalDateTime.now());
-        o.setStatus(OrderStatus.DRAFT);
+        o.setStatus(o.getStatus());
 
         return orderRepository.save(o);
     }
