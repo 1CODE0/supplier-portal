@@ -1,6 +1,3 @@
-Thought for a second
-
-
 * **Week 1: Project Setup & PWA Spike**
 
   * Bootstrap Spring Boot + JPA + PostgreSQL backend
