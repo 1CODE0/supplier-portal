@@ -34,6 +34,17 @@ const router = createBrowserRouter(
           element: <NewOrderPage />,
           errorElement: <ErrorPage />,
         },
+        {
+          path: "/suppliers",
+          element: <NewOrderPage />,
+          errorElement: <ErrorPage />,
+        },
+        {
+          path: "/suppliers/new",
+          element: <NewOrderPage />,
+          errorElement: <ErrorPage />,
+        },
+
         // Add more nested protected routes here
       ],
     },

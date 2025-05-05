@@ -2,84 +2,78 @@
 package com.portal.model;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.util.List;
+import java.util.UUID;
+
+import com.portal.audit.Auditable;
 
 @Entity
 @Table(name = "suppliers")
-public class Supplier {
-
+public class Supplier extends Auditable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
 
-    @Column(name = "supplier_name", nullable = false)
-    private String supplierName;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false, nullable = false)
-    private Instant createdAt;
+    @Column(nullable = false)
+    private String contactEmail;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private String phone;
 
-    @Version
-    @Column(name = "version", nullable = false)
-    private Integer version;
+    private String address;
 
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Order> orders;
+    // @PrePersist
+    // protected void onCreate() {
+    // Instant now = Instant.now();
+    // this.createdAt = now;
+    // this.updatedAt = now;
+    // }
 
-    public Long getId() {
+    // @PreUpdate
+    // protected void onUpdate() {
+    // this.updatedAt = Instant.now();
+    // }
+
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public String getSupplierName() {
-        return supplierName;
+    public String getName() {
+        return name;
     }
 
-    public void setSupplierName(String supplierName) {
-        this.supplierName = supplierName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public String getContactEmail() {
+        return contactEmail;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public String getPhone() {
+        return phone;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
-    public Integer getVersion() {
-        return version;
+    public String getAddress() {
+        return address;
     }
 
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public List<Order> getOrders() {
-        return orders;
-    }
-
-    public void setOrders(List<Order> orders) {
-        this.orders = orders;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
 }

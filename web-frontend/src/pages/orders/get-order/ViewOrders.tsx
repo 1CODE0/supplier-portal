@@ -60,11 +60,11 @@ export default function OrdersPage() {
           {listOrdersQuery.length > 0 ? (
             listOrdersQuery.map((o) => {
               return (
-                <ListItem key={o.orderId} divider>
+                <ListItem key={o.id} divider>
                   <ListItemText
-                    primary={`${
-                      o.suppliers?.supplierName
-                    } — $${o.amount?.toFixed(2)}`}
+                    primary={`${o.supplier?.name} — $${o.totalAmount?.toFixed(
+                      2
+                    )}`}
                     secondary={new Date(
                       Number(o.createdAt) * 1000
                     ).toLocaleString()}

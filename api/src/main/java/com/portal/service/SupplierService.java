@@ -1,30 +1,43 @@
 package com.portal.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import com.portal.model.Supplier;
 import com.portal.repository.SupplierRepository;
 
 @Service
 public class SupplierService {
-    public final SupplierRepository repo;
+    private final SupplierRepository supplierRepository;
 
-    public SupplierService(SupplierRepository repo) {
-        this.repo = repo;
+    public SupplierService(SupplierRepository supplierRepository) {
+        this.supplierRepository = supplierRepository;
     }
 
-    @PostMapping
-    public Supplier createSupplierService(@RequestBody Supplier supplier) {
-        return repo.save(supplier);
+    public List<Supplier> getAll() {
+        return supplierRepository.findAll();
     }
 
-    @GetMapping
-    public List<Supplier> listSupplierService() {
-        return repo.findAll();
+    public Supplier getById(UUID id) {
+        return supplierRepository.findById(id).orElseThrow();
+    }
+
+    public Supplier create(Supplier s) {
+        return supplierRepository.save(s);
+    }
+
+    public Supplier update(UUID id, Supplier s) {
+        Supplier existing = getById(id);
+        existing.setName(s.getName());
+        existing.setContactEmail(s.getContactEmail());
+        existing.setPhone(s.getPhone());
+        existing.setAddress(s.getAddress());
+        return supplierRepository.save(existing);
+    }
+
+    public void delete(UUID id) {
+        supplierRepository.deleteById(id);
     }
 }

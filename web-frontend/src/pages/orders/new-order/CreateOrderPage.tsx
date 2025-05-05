@@ -132,14 +132,17 @@ import { useNavigate } from "react-router-dom";
 import { useSuppliers } from "../../../hooks/useSuppliers";
 import { useOrders } from "../../../hooks/useOrders";
 import { OrderInput, orderInputSchema } from "../../../models/orderModel";
-import { OrderDTO, Supplier } from "../../../api";
-import { useEffect } from "react";
+import { Order, Supplier } from "../../../api";
+// import { useEffect } from "react";
 
 export default function NewOrderPage() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const { listSuppliersQuery: suppliers = [], isLoading: supLoading } =
-    useSuppliers();
+  const {
+    listSuppliersQuery: suppliers,
+    isLoading: supLoading,
+    getSuppliersQuery,
+  } = useSuppliers();
   const { createOrderMutation } = useOrders();
 
   const {
@@ -150,19 +153,15 @@ export default function NewOrderPage() {
     resolver: zodResolver(orderInputSchema),
   });
 
-  useEffect(() => {
-    console.log("SDFFFFFFFFFF : ", suppliers);
-  }, [suppliers]);
   const onSubmit = async (data: OrderInput) => {
-    const _data: OrderDTO = {
-      amount: data.amount,
-      supplier: {
-        supplierId: data.supplierId,
-        supplierName: suppliers.find(
-          (item) => item.supplierId === data.supplierId
-        )?.supplierName,
-      },
+    const supplierData = getSuppliersQuery(data.supplierId).data;
+
+    const _data: Order = {
+      totalAmount: data.totalAmount,
+      supplier: supplierData,
+      status: Order.status.PENDING,
     };
+
     console.log("🚀 ~ CreateOrderPage.tsx:154 ~ onSubmit ~ data:", _data);
 
     try {
@@ -190,12 +189,10 @@ export default function NewOrderPage() {
           render={({ field: { onChange, value } }) => (
             <Autocomplete<Supplier>
               options={suppliers}
-              getOptionLabel={(option) => option.supplierName as string} // ← this line is crucial
-              isOptionEqualToValue={(opt, val) =>
-                opt.supplierId === val.supplierId
-              }
-              value={suppliers.find((s) => s.supplierId === value) || null}
-              onChange={(_, newVal) => onChange(newVal?.supplierId ?? 0)}
+              getOptionLabel={(option) => option.name as string} // ← this line is crucial
+              isOptionEqualToValue={(opt, val) => opt.id === val.id}
+              value={suppliers.find((s) => s.id === value) || null}
+              onChange={(_, newVal) => onChange(newVal?.id ?? 0)}
               loading={supLoading}
               renderInput={(params) => (
                 <TextField
@@ -207,12 +204,8 @@ export default function NewOrderPage() {
                 />
               )}
               renderOption={(props, option) => (
-                <li
-                  {...props}
-                  key={option.supplierId}
-                  value={option.supplierId}
-                >
-                  {option.supplierName}
+                <li {...props} key={option.id} value={option.id}>
+                  {option.name}
                 </li>
               )}
             />
@@ -220,7 +213,7 @@ export default function NewOrderPage() {
         />
 
         <Controller
-          name="amount"
+          name="totalAmount"
           control={control}
           render={({ field }) => (
             <TextField
@@ -232,8 +225,8 @@ export default function NewOrderPage() {
                   !event.target.value ? 0 : Number(event.target.value)
                 );
               }}
-              error={!!errors.amount}
-              helperText={errors.amount?.message}
+              error={!!errors.totalAmount}
+              helperText={errors.totalAmount?.message}
               fullWidth
             />
           )}

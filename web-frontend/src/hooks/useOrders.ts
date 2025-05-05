@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrderControllerService } from "../api/services/OrderControllerService";
-import { OrderDTO } from "../api";
+import { Order } from "../api";
 
-export function useOrders(orderId?: number) {
+export function useOrders() {
   const queryClient = useQueryClient();
 
   const listOrdersQuery = useQuery({
     queryKey: ["orders"],
-    queryFn: () => OrderControllerService.listOrders(),
+    queryFn: () => OrderControllerService.list(),
   });
 
   // const getOrderQuery = useQuery({
@@ -17,9 +17,10 @@ export function useOrders(orderId?: number) {
   // });
 
   const createOrderMutation = useMutation({
-    mutationFn: (newOrder: OrderDTO) =>
+    mutationFn: (newOrder: Order) =>
       OrderControllerService.createOrder({
-        amount: newOrder.amount,
+        totalAmount: newOrder.totalAmount,
+        status: newOrder.status,
         supplier: newOrder.supplier,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),

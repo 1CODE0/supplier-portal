@@ -1,14 +1,32 @@
 import { z } from "zod";
 
-// models.ts
+export enum eOrderStatus {
+  PENDING = "PENDING",
+  SUCCESSFUL = "SUCCESSFUL",
+  DELIVERED = "DELIVERED",
+  CANCELED = "CANCELED",
+}
+
 export const orderInputSchema = z.object({
-  supplierId: z.number().min(1, "Please select a supplier"),
-  amount: z.number().min(0.01, "Amount must be > 0"),
+  supplierId: z
+    .string()
+    .uuid("Invalid supplier ID format") // Assuming UUID format for the supplier ID
+    .min(1, "Please select a supplier"), // Ensuring it's not empty
+  totalAmount: z
+    .number()
+    .min(0.01, "Amount must be greater than 0") // Ensure the total amount is > 0
+    .max(9999999999.99, "Amount is too large"), // Maximum value to handle precision
+  description: z.string().optional(), // Description is optional in the Order entity
+  status: z
+    .enum(Object.values(eOrderStatus) as [string, ...string[]])
+    .optional(),
+  orderDate: z.string().optional(), // Assuming orderDate can be provided as a string in ISO format, default will be set in backend
 });
+
 export type OrderInput = z.infer<typeof orderInputSchema>;
 
-export const orderSchema = orderInputSchema.extend({
-  id: z.number(),
-  createdAt: z.string(),
-});
-export type Order = z.infer<typeof orderSchema>;
+// export const orderSchema = orderInputSchema.extend({
+//   id: z.number(),
+//   createdAt: z.string(),
+// });
+// export type Order = z.infer<typeof orderSchema>;

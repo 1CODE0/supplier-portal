@@ -3,7 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export type Supplier = {
-    supplierId?: number;
-    supplierName?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    id?: string;
+    name?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
 };
 

@@ -1,15 +1,15 @@
 package com.portal.service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
+import com.portal.enums.OrderStatus;
+import com.portal.exception.BadRequestException;
+import com.portal.exception.NotFoundException;
 import com.portal.model.Order;
 import com.portal.model.Supplier;
 import com.portal.repository.OrderRepository;
@@ -17,21 +17,57 @@ import com.portal.repository.SupplierRepository;
 
 @Service
 public class OrderService {
-    public final OrderRepository orderRepo;
-    public final SupplierRepository supplierRepo;
+    private final OrderRepository orderRepository;
+    private final SupplierRepository supplierRepository;
 
-    public OrderService(OrderRepository orderRepo, SupplierRepository supplierRepo) {
-        this.orderRepo = orderRepo;
-        this.supplierRepo = supplierRepo;
+    public OrderService(OrderRepository orderRepository, SupplierRepository supplierRepository) {
+        this.orderRepository = orderRepository;
+        this.supplierRepository = supplierRepository;
     }
 
-    @PostMapping
-    public Order createOrderService(@RequestBody Order order) {
-        return orderRepo.save(order);
+    public List<Order> getAll() {
+        return orderRepository.findAll();
     }
 
-    @GetMapping
-    public List<Order> listOrderService() {
-        return orderRepo.findAll();
+    public Order getById(UUID id) {
+        return orderRepository.findById(id).orElseThrow();
+    }
+
+    public List<Order> getBySupplier(UUID supplierId) {
+        return orderRepository.findBySupplierId(supplierId);
+    }
+
+    public Order create(Order o) {
+        UUID supplierId = Optional.ofNullable(o.getSupplier())
+                .map(Supplier::getId)
+                .orElseThrow(() -> new BadRequestException("Supplier ID is required"));
+
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new NotFoundException("Supplier not found: " + supplierId));
+
+        o.setSupplier(supplier);
+        o.setOrderDate(LocalDateTime.now());
+        o.setStatus(OrderStatus.DRAFT);
+
+        return orderRepository.save(o);
+    }
+
+    public Order update(UUID id, Order o) {
+        Order existing = getById(id);
+        existing.setStatus(o.getStatus());
+        existing.setTotalAmount(o.getTotalAmount());
+        existing.setDescription(o.getDescription());
+
+        UUID supplierId = o.getSupplier().getId();
+
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new NotFoundException("Supplier not found: " + supplierId));
+
+        existing.setSupplier(supplier);
+        return orderRepository.save(existing);
+    }
+
+    public void delete(UUID id) {
+        orderRepository.deleteById(id);
     }
 }

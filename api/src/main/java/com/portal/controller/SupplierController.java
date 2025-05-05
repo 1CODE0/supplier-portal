@@ -4,27 +4,47 @@ package com.portal.controller;
 import com.portal.model.Supplier;
 import com.portal.service.SupplierService;
 
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/suppliers")
 public class SupplierController {
-    public final SupplierService service;
+    private final SupplierService svc;
 
-    public SupplierController(SupplierService service) {
-        this.service = service;
-    }
-
-    @PostMapping
-    public Supplier createSupplier(@RequestBody Supplier supplier) {
-        return service.createSupplierService(supplier);
+    public SupplierController(SupplierService svc) {
+        this.svc = svc;
     }
 
     @GetMapping
     public List<Supplier> listSuppliers() {
-        return service.listSupplierService();
+        return svc.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public Supplier getSupplierById(@PathVariable UUID id) {
+        return svc.getById(id);
+    }
+
+    @PostMapping
+    public Supplier createSupplier(@RequestBody @Valid Supplier s) {
+        return svc.create(s);
+    }
+
+    @PutMapping("/{id}")
+    public Supplier updateSupplier(@PathVariable UUID id, @RequestBody @Valid Supplier s) {
+        return svc.update(id, s);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void deleteSupplier(@PathVariable UUID id) {
+        svc.delete(id);
     }
 }
