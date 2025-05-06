@@ -5,10 +5,12 @@ import jakarta.persistence.*;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.portal.audit.Auditable;
 
 @Entity
 @Table(name = "suppliers")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Supplier extends Auditable {
     @Id
     @GeneratedValue

@@ -1,78 +1,77 @@
-// src/hooks/useSuppliers.ts
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SupplierControllerService } from "../api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Supplier, SupplierControllerService } from "../api";
 import { SupplierInput } from "../models/supplierModel";
+import customToast from "../utilities/customToast";
 
-export function useSuppliers() {
-  const queryClient = useQueryClient();
-
-  const listSuppliersQuery = useQuery({
+export function useListSuppliers() {
+  const query = useQuery<Supplier[], Error>({
     queryKey: ["suppliers"],
     queryFn: () => SupplierControllerService.listSuppliers(),
+    staleTime: 5 * 60 * 1000,
   });
-
-  const createSupplierMutation = useMutation({
-    mutationFn: (newSupplier: SupplierInput) =>
-      SupplierControllerService.createSupplier(newSupplier),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
-  });
-
-  const getSuppliersQuery = useSupplierQuery;
 
   return {
-    ...listSuppliersQuery,
-    listSuppliersQuery: listSuppliersQuery.data ?? [],
-    createSupplierMutation,
-    getSuppliersQuery,
+    suppliers: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
   };
 }
 
-const useSupplierQuery = (supplierId: string) => {
-  return useQuery({
-    queryKey: ["supplier", supplierId],
-    queryFn: () => SupplierControllerService.getSupplierById(supplierId!),
-    enabled: !!supplierId,
+export function useCreateSupplier() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<Supplier, Error, SupplierInput>({
+    mutationFn: (newSupplier) =>
+      SupplierControllerService.createSupplier(newSupplier),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      customToast("success", "Supplier created successfully!");
+    },
+    onError: (error) => {
+      customToast("error", `Failed to create supplier: ${error.message}`);
+    },
   });
-};
 
-// // src/hooks/useSuppliers.ts
-// import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-// import { SupplierControllerService } from "../api";
-// import { SupplierInput } from "../models/supplierModel";
+  return {
+    createSupplier: mutation.mutate,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
+    data: mutation.data,
+  };
+}
 
-// export function useGetCreateUpdateSuppliers() {
-//   const queryClient = useQueryClient();
-
-//   const listSuppliersQuery = useQuery({
-//     queryKey: ["suppliers"],
-//     queryFn: () => SupplierControllerService.listSuppliers(),
-//   });
-
-//   const createSupplierMutation = useMutation({
-//     mutationFn: (newSupplier: SupplierInput) =>
-//       SupplierControllerService.createSupplier(newSupplier),
-//     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+// export function useSupplierById(supplierId: string) {
+//   const query = useQuery<Supplier, Error>({
+//     queryKey: ["supplier", supplierId],
+//     queryFn: () => SupplierControllerService.getSupplierById(supplierId!),
+//     enabled: Boolean(supplierId),
+//     staleTime: 2 * 60 * 1000,
 //   });
 
 //   return {
-//     ...listSuppliersQuery,
-//     listSuppliersQuery: listSuppliersQuery.data ?? [],
-//     createSupplierMutation,
-//     ...getSuppliersQuery,
-//     getSupplierQuery: getSuppliersQuery.data,
+//     supplier: query.data,
+//     isLoading: query.isLoading,
+//     isError: query.isError,
+//     error: query.error,
+//     isFetching: query.isFetching,
+//     refetch: query.refetch,
 //   };
 // }
+export function useSupplierActions() {
+  const queryClient = useQueryClient();
 
-// export function useGetDeleteBySuppliersId() {
-//   const getSupplierById = (supplierId: string) => {
-//     return useQuery({
-//       queryKey:  ['supplier', supplierId],
-//       queryFn: () => SupplierControllerService.getSupplierById(supplierId),
-//   });
-//   return {
-//     ...getSupplierById,
-//     getSupplierById: getSupplierById.data,
-//   };
-// }
+  const fetchSupplier = (id: string) =>
+    queryClient.fetchQuery<Supplier, Error>({
+      queryKey: ["supplier", id],
+      queryFn: () => SupplierControllerService.getSupplierById(id),
+      staleTime: 2 * 60 * 1000,
+    });
 
-// };
+  return {
+    fetchSupplier,
+  };
+}

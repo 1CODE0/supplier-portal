@@ -1,49 +1,61 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrderControllerService } from "../api/services/OrderControllerService";
 import { Order } from "../api";
+import customToast from "../utilities/customToast";
 
-export function useOrders() {
-  const queryClient = useQueryClient();
-
-  const listOrdersQuery = useQuery({
+export function useListOrders() {
+  const query = useQuery<Order[], Error>({
     queryKey: ["orders"],
     queryFn: () => OrderControllerService.list(),
   });
 
-  // const getOrderQuery = useQuery({
-  //   queryKey: ["order", orderId],
-  //   queryFn: () => OrderControllerService.getOrder(orderId!),
-  //   enabled: !!orderId,
-  // });
+  return {
+    orders: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
+  };
+}
 
-  const createOrderMutation = useMutation({
-    mutationFn: (newOrder: Order) =>
-      OrderControllerService.createOrder({
-        totalAmount: newOrder.totalAmount,
-        status: newOrder.status,
-        supplier: newOrder.supplier,
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<Order, Error, Order>({
+    mutationFn: (newOrder) => OrderControllerService.createOrder(newOrder),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      customToast("success", "Order created successfully!");
+    },
+    onError: (error) => {
+      customToast("error", `Failed to create order: ${error.message}`);
+    },
   });
 
-  // const updateOrderMutation = useMutation({
-  //   mutationFn: (payload: { id: number; data: OrderInput }) =>
-  //     OrderControllerService.updateOrder(payload.id, payload.data),
-  //   onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
-  // });
+  return {
+    createOrder: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
+    data: mutation.data,
+  };
+}
 
-  // const deleteOrderMutation = useMutation({
-  //   mutationFn: (id: number) => OrderControllerService.deleteOrder(id),
-  //   onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
-  // });
+export function useOrderById(orderId: string) {
+  const query = useQuery<Order, Error>({
+    queryKey: ["orders", orderId],
+    queryFn: () => OrderControllerService.getOrderById(orderId!),
+    enabled: Boolean(orderId),
+    staleTime: 2 * 60 * 1000,
+  });
 
   return {
-    ...listOrdersQuery,
-    listOrdersQuery: listOrdersQuery.data ?? [],
-    // ...getOrderQuery,
-    // getOrderQuery: getOrderQuery.data,
-    createOrderMutation,
-    // updateOrderMutation,
-    // deleteOrderMutation,
+    order: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
   };
 }

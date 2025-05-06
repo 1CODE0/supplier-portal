@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.portal.audit.Auditable;
 import com.portal.enums.OrderStatus;
 
@@ -21,6 +22,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "orders")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Order extends Auditable {
     @Id
     @GeneratedValue

@@ -1008,3 +1008,7 @@ INSERT INTO orders (supplier_id, status, total_amount, description) VALUES
     500.00,
     'Experimental bio-samples'
   );
+
+
+TRUNCATE TABLE orders, suppliers
+  RESTART IDENTITY;  -- resets any SERIAL/SEQUENCE counters

@@ -16,9 +16,10 @@ export type Order = {
 export namespace Order {
     export enum status {
         PENDING = 'PENDING',
-        SUCCESSFUL = 'SUCCESSFUL',
+        CONFIRMED = 'CONFIRMED',
+        SHIPPED = 'SHIPPED',
         DELIVERED = 'DELIVERED',
-        CANCELED = 'CANCELED',
+        CANCELLED = 'CANCELLED',
     }
 }
 

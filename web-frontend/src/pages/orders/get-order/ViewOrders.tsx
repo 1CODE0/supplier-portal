@@ -9,30 +9,18 @@ import {
   ListItemText,
   Box,
   CircularProgress,
-  // Alert,
-  Snackbar,
   Card,
-  SnackbarContent,
 } from "@mui/material";
-import { useOrders } from "../../../hooks/useOrders";
 import { useNavigate } from "react-router-dom";
+import { useListOrders } from "../../../hooks/useOrders";
 
 export default function OrdersPage() {
-  const { listOrdersQuery, isLoading, error } = useOrders();
+  const { orders, isLoading } = useListOrders();
   const navigate = useNavigate();
 
   if (isLoading)
     return (
       <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
-    );
-  if (error)
-    return (
-      <Snackbar>
-        <SnackbarContent
-          message={error instanceof Error ? error.message : "Unknown error"}
-          role="alert"
-        ></SnackbarContent>
-      </Snackbar>
     );
 
   return (
@@ -57,8 +45,8 @@ export default function OrdersPage() {
           </Button>
         </div>
         <List component={Paper}>
-          {listOrdersQuery.length > 0 ? (
-            listOrdersQuery.map((o) => {
+          {orders.length > 0 ? (
+            orders.map((o) => {
               return (
                 <ListItem key={o.id} divider>
                   <ListItemText

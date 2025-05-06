@@ -10,6 +10,7 @@ import { QueryProvider } from "./providers/QueryProvider";
 import { AppRouter } from "./routes/AppRouter";
 import { theme } from "./lib/theme";
 import { AuthProvider } from "./providers/AuthProvider";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   return (
@@ -32,6 +33,15 @@ function App() {
             <AppRouter />
           </AuthProvider>
         </Container>
+
+        <ToastContainer
+          position="top-right"
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          theme="colored"
+        />
       </QueryProvider>
     </ThemeProvider>
   );

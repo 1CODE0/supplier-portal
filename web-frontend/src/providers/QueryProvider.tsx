@@ -1,10 +1,29 @@
 // web/src/providers.tsx
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { ReactNode } from "react";
+import customToast from "../utilities/customToast";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      customToast("error", `An error occurred: ${error.message}`);
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      retryDelay: () => 2_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   return (

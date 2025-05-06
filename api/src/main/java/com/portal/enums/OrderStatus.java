@@ -1,5 +1,9 @@
 package com.portal.enums;
 
 public enum OrderStatus {
-    PENDING, SUCCESSFUL, DELIVERED, CANCELED
+    PENDING,
+    CONFIRMED,
+    SHIPPED,
+    DELIVERED,
+    CANCELLED
 }

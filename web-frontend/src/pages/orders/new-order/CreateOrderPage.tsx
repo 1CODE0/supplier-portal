@@ -1,4 +1,5 @@
 // src/pages/orders/new.tsx
+
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,23 +11,24 @@ import {
   Autocomplete,
   TextField,
 } from "@mui/material";
-import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
-import { useSuppliers } from "../../../hooks/useSuppliers";
-import { useOrders } from "../../../hooks/useOrders";
 import { OrderInput, orderInputSchema } from "../../../models/orderModel";
 import { Order, Supplier } from "../../../api";
-// import { useEffect } from "react";
+import { useCreateOrder } from "../../../hooks/useOrders";
+import {
+  useListSuppliers,
+  useSupplierActions,
+} from "../../../hooks/useSuppliers";
+import customToast from "../../../utilities/customToast";
 
 export default function NewOrderPage() {
   const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
-  const {
-    listSuppliersQuery: suppliers,
-    isLoading: supLoading,
-    getSuppliersQuery,
-  } = useSuppliers();
-  const { createOrderMutation } = useOrders();
+
+  const { suppliers, isLoading: isSuppliersLoading } = useListSuppliers();
+
+  const { fetchSupplier } = useSupplierActions();
+
+  const { createOrder, isLoading: isCreating } = useCreateOrder();
 
   const {
     control,
@@ -37,59 +39,55 @@ export default function NewOrderPage() {
   });
 
   const onSubmit = async (data: OrderInput) => {
-    const supplierData = getSuppliersQuery(data.supplierId).data;
-
-    const _data: Order = {
-      totalAmount: data.totalAmount,
-      supplier: supplierData,
-      status: Order.status.PENDING,
-    };
-
-    console.log("🚀 ~ CreateOrderPage.tsx:154 ~ onSubmit ~ data:", _data);
-
     try {
-      await createOrderMutation.mutateAsync(_data);
-      enqueueSnackbar("Order created successfully!", { variant: "success" });
+      const supplierData = await fetchSupplier(data.supplier);
+
+      const payload = {
+        totalAmount: data.totalAmount,
+        supplier: supplierData,
+        status: Order.status.PENDING,
+        description: data.description,
+      };
+
+      await createOrder(payload);
       navigate("/orders");
     } catch {
-      enqueueSnackbar("Failed to create order.", { variant: "error" });
+      customToast("error", "Failed to create order.");
     }
   };
+
+  const busy = isSubmitting || isCreating;
 
   return (
     <Paper sx={{ p: 4, maxWidth: 600, mx: "auto", mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         Create New Order
       </Typography>
+
       <Box
         component="form"
         onSubmit={handleSubmit(onSubmit)}
         sx={{ display: "flex", flexDirection: "column", gap: 2 }}
       >
         <Controller
-          name="supplierId"
+          name="supplier"
           control={control}
           render={({ field: { onChange, value } }) => (
             <Autocomplete<Supplier>
               options={suppliers}
-              getOptionLabel={(option) => option.name as string} // ← this line is crucial
+              getOptionLabel={(opt) => opt.name as string}
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               value={suppliers.find((s) => s.id === value) || null}
-              onChange={(_, newVal) => onChange(newVal?.id ?? 0)}
-              loading={supLoading}
+              onChange={(_, newVal) => onChange(newVal?.id ?? "")}
+              loading={isSuppliersLoading}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Supplier"
-                  error={!!errors.supplierId}
-                  helperText={errors.supplierId?.message}
+                  error={!!errors.supplier}
+                  helperText={errors.supplier?.message}
                   fullWidth
                 />
-              )}
-              renderOption={(props, option) => (
-                <li {...props} key={option.id} value={option.id}>
-                  {option.name}
-                </li>
               )}
             />
           )}
@@ -103,11 +101,9 @@ export default function NewOrderPage() {
               {...field}
               type="number"
               label="Amount"
-              onChange={(event) => {
-                field.onChange(
-                  !event.target.value ? 0 : Number(event.target.value)
-                );
-              }}
+              onChange={(e) =>
+                field.onChange(e.target.value ? +e.target.value : 0)
+              }
               error={!!errors.totalAmount}
               helperText={errors.totalAmount?.message}
               fullWidth
@@ -121,32 +117,26 @@ export default function NewOrderPage() {
           render={({ field }) => (
             <TextField
               {...field}
-              type="text"
               label="Description"
-              onChange={(event) => {
-                field.onChange(
-                  !event.target.value ? 0 : Number(event.target.value)
-                );
-              }}
-              error={!!errors.totalAmount}
-              helperText={errors.totalAmount?.message}
+              error={!!errors.description}
+              helperText={errors.description?.message}
               fullWidth
             />
           )}
         />
-        <Box sx={{ position: "relative", width: "fit-content" }}>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
+
+        <Box sx={{ position: "relative", width: "fit-content", mt: 2 }}>
+          <Button type="submit" variant="contained" disabled={busy}>
             Create Order
           </Button>
-          {isSubmitting && (
+          {busy && (
             <CircularProgress
               size={24}
               sx={{
                 position: "absolute",
                 top: "50%",
                 left: "50%",
-                mt: "-12px",
-                ml: "-12px",
+                transform: "translate(-50%, -50%)",
               }}
             />
           )}

@@ -94,3 +94,28 @@ public class Order extends Auditable {
     private UUID id;
     // … other fields …
 }
+
+Few new changes added :
+
+1. Single-flight + Controlled Retries (20 sec window)
+Problem: You want “keep retrying for up to 20 s” on network hiccups, but never fire more than one request at once.
+
+Solution:
+Leverage React-Query’s built-in retry logic, which is already serial (it won’t start a new retry before the prior one errors). Configure:
+
+useQuery<Order[], Error>({
+  queryKey: ["orders"],
+  queryFn: () => OrderControllerService.list(),
+  retry: 5,                       // total attempts = 1 initial + 5 retries
+  retryDelay: () => 4_000,        // 4 s between attempts → ~20 s total
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+Serial retries ensure only one in-flight call at a time.
+
+Fixed delays give you that 20 s window to recover from transient failures.
+
+You don’t need extra flags for “one request”—React-Query handles that for you.
+
+
+2. In Entity added an annotation ---> @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
