@@ -90,29 +90,30 @@ declare module "@mui/material/styles" {
   // Palette
   interface Palette {
     customColors: {
-      bodyBg: string;
-      chatBg: string;
-      greyLightBg: string;
-      inputBorder: string;
-      tableHeaderBg: string;
-      tooltipText: string;
-      trackBg: string;
       colorBgBase: string;
       colorBgBaseSecondary: string;
       colorText: string;
       gradientColor: string;
       colorPrimary: string;
+      brandPrimary?: string;
+      brandSecondary?: string;
+      accent?: string;
+      neutralLight?: string;
+      neutralDark?: string;
     };
   }
   interface PaletteOptions {
     customColors?: {
-      bodyBg?: string;
-      chatBg?: string;
-      greyLightBg?: string;
-      inputBorder?: string;
-      tableHeaderBg?: string;
-      tooltipText?: string;
-      trackBg?: string;
+      colorBgBase: string;
+      colorBgBaseSecondary: string;
+      colorText: string;
+      gradientColor: string;
+      colorPrimary: string;
+      brandPrimary?: string;
+      brandSecondary?: string;
+      accent?: string;
+      neutralLight?: string;
+      neutralDark?: string;
     };
   }
 

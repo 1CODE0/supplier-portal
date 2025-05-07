@@ -25,9 +25,7 @@ export default function NewOrderPage() {
   const navigate = useNavigate();
 
   const { suppliers, isLoading: isSuppliersLoading } = useListSuppliers();
-
   const { fetchSupplier } = useSupplierActions();
-
   const { createOrder, isLoading: isCreating } = useCreateOrder();
 
   const {

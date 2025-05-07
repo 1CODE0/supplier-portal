@@ -1,3 +1,4 @@
+// src/App.tsx
 import {
   Box,
   Container,
@@ -5,46 +6,51 @@ import {
   ThemeProvider,
   Typography,
 } from "@mui/material";
-// import { darkTheme } from "./lib/theme";
 import { QueryProvider } from "./providers/QueryProvider";
 import { AppRouter } from "./routes/AppRouter";
-import { theme } from "./lib/theme";
 import { AuthProvider } from "./providers/AuthProvider";
-import { ToastContainer } from "react-toastify";
+import CustomToastContainer from "./utilities/CustomToastContainer";
+import { getMode, getSettingsFromCookie } from "./utilities/cookieUtils";
+import { useSettings } from "./hooks/useSettings";
+import { darkTheme, lightTheme } from "./lib/theme";
+import { SettingsProvider } from "./contexts/settingsContext";
 
-function App() {
+function ThemedAppContent() {
+  const { settings } = useSettings();
+  const theme = settings.mode === "light" ? lightTheme : darkTheme;
+
   return (
     <ThemeProvider theme={theme}>
-      <QueryProvider>
-        <CssBaseline />
-        <header>
-          <Box
-            component="header"
-            sx={{ bgcolor: "primary.main", color: "#fff", py: 1 }}
-          >
-            <Container maxWidth="md">
-              <Typography variant="h6">Smart Supplier Portal</Typography>
-            </Container>
-          </Box>
-        </header>
+      <CssBaseline />
 
-        <Container maxWidth="md" sx={{ my: 4 }}>
-          <AuthProvider>
-            <AppRouter />
-          </AuthProvider>
-        </Container>
+      <header>
+        <Box sx={{ bgcolor: "primary.main", color: "#fff", py: 1 }}>
+          <Container maxWidth="md">
+            <Typography variant="h6">Smart Supplier Portal</Typography>
+          </Container>
+        </Box>
+      </header>
 
-        <ToastContainer
-          position="top-right"
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          pauseOnHover
-          theme="colored"
-        />
-      </QueryProvider>
+      <Container maxWidth="md" sx={{ my: 4 }}>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </Container>
+
+      <CustomToastContainer />
     </ThemeProvider>
   );
 }
 
-export default App;
+export default function App() {
+  const settingsCookie = getSettingsFromCookie();
+  const mode = getMode();
+
+  return (
+    <QueryProvider>
+      <SettingsProvider settingsCookie={settingsCookie} mode={mode}>
+        <ThemedAppContent />
+      </SettingsProvider>
+    </QueryProvider>
+  );
+}

@@ -1,33 +1,21 @@
-import { Theme, useTheme } from "@mui/material";
+// useThemePalette.ts
 
-import { useSettings } from "./useSettings";
+import { useTheme, Theme } from "@mui/material/styles";
 
-const getPaletteFromThemeObj = (themeObj: Theme) => {
-  return {
-    textPalette: themeObj.palette.text,
-    errorPalette: themeObj.palette.error,
-    successPalette: themeObj.palette.success,
-    warningPalette: themeObj.palette.warning,
-    infoPalette: themeObj.palette.info,
-    primaryPalette: themeObj.palette.primary,
-    secondaryPalette: themeObj.palette.secondary,
-    customPalette: themeObj.palette.customColors,
-  };
-};
+export interface ThemePalette {
+  text: Theme["palette"]["text"];
+  background: Theme["palette"]["background"];
+  primary: Theme["palette"]["primary"];
+  custom: Theme["palette"]["customColors"];
+}
 
-const useThemePalette = () => {
+export default function useThemePalette(): ThemePalette {
   const theme = useTheme();
-  const { settings } = useSettings();
-
-  const lightThemeObj = theme;
-  const darkThemeObj = theme;
-
-  const palette =
-    settings.mode === "light"
-      ? getPaletteFromThemeObj(lightThemeObj)
-      : getPaletteFromThemeObj(darkThemeObj);
-
-  return palette;
-};
-
-export default useThemePalette;
+  const palette = theme.palette;
+  return {
+    text: palette.text,
+    background: palette.background,
+    primary: palette.primary,
+    custom: palette.customColors,
+  };
+}
