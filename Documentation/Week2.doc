@@ -119,3 +119,242 @@ You don’t need extra flags for “one request”—React-Query handles that fo
 
 
 2. In Entity added an annotation ---> @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+
+Week2-day2:
+Thought for 4 seconds
+
+
+Here’s a step-by-step walkthrough to evolve your simple login into a more robust, production-ready flow—complete with proper loading states, validation, callback hooks, lazy loading, and in-UI tips.
+
+---
+
+## 1. Use React Hook Form for Validation & Performance
+
+Instead of tracking each field in state, **React Hook Form** gives you:
+
+* Built-in validation
+* Minimal re-rendering
+* Easy error messages
+
+```bash
+npm install react-hook-form
+```
+
+```tsx
+// src/pages/LoginPage.tsx
+'use client';
+import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import {
+  Button,
+  Paper,
+  Typography,
+  Box,
+  TextField,
+  CircularProgress,
+  Tooltip
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { useAuth } from '../providers/AuthProvider';
+import { useNavigate } from 'react-router-dom';
+
+interface FormValues {
+  username: string;
+}
+
+export const LoginPage: React.FC = () => {
+  const { login, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>();
+  
+  // Smart redirect if already logged in
+  useEffect(() => {
+    if (localStorage.getItem('user')) {
+      navigate('/orders', { replace: true });
+    }
+  }, [navigate]);
+
+  // Wrapped handler prevents re-creation on each render
+  const onSubmit = useCallback(async (data: FormValues) => {
+    await login(data.username);        // assume returns a Promise
+    navigate('/orders', { replace: true });
+  }, [login, navigate]);
+
+  return (
+    <Suspense fallback={<LoadingOverlay />}>
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto', mt: 10 }}>
+        <Typography variant="h5" gutterBottom fontWeight="bold">
+          Welcome to Smart Supplier Portal
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {/* Username field */}
+          <Controller
+            name="username"
+            control={control}
+            defaultValue=""
+            rules={{ required: 'Username is required' }}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Username"
+                variant="outlined"
+                error={!!errors.username}
+                helperText={errors.username?.message}
+                InputProps={{
+                  endAdornment: (
+                    <Tooltip title="Use your company-assigned login">
+                      <i className="ri-information-line" style={{ cursor: 'pointer' }} />
+                    </Tooltip>
+                  )
+                }}
+              />
+            )}
+          />
+
+          {/* Submit button with loading spinner */}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting || authLoading}
+            startIcon={(isSubmitting || authLoading) && <CircularProgress size={20} />}
+          >
+            {isSubmitting || authLoading ? 'Logging in…' : 'Login'}
+          </Button>
+        </Box>
+      </Paper>
+    </Suspense>
+  );
+};
+
+// A full-screen loading overlay for Suspense boundaries
+const LoadingOverlay: React.FC = () => (
+  <Box
+    sx={{
+      position: 'fixed',
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      zIndex: theme => theme.zIndex.modal,
+    }}
+  >
+    <CircularProgress size={60} />
+  </Box>
+);
+```
+
+**What’s happening here?**
+
+1. **`react-hook-form`** handles your form state & validation.
+2. The **`onSubmit`** is wrapped in `useCallback`—React can skip re-creating it across renders.
+3. **Loading states:**
+
+   * `isSubmitting` (from RHF) blocks double-submits.
+   * `authLoading` (from your auth provider) covers any async network latency.
+   * `CircularProgress` visually indicates progress.
+4. **Tooltips & tips:** A small “ℹ️” icon in the input gives contextual help.
+5. **`Suspense` boundary** around the page lets you lazy-load heavy subcomponents (we’ll wire that up next).
+
+---
+
+## 2. Lazy-Load Your Routes & Components
+
+Code-split your pages so the login bundle is tiny, and other pages load on demand:
+
+```tsx
+// src/App.tsx or your Routes file
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoadingOverlay from './components/LoadingOverlay';
+
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const OrdersPage = React.lazy(() => import('./pages/OrdersPage'));
+
+export const App = () => (
+  <BrowserRouter>
+    <Suspense fallback={<LoadingOverlay />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+      </Routes>
+    </Suspense>
+  </BrowserRouter>
+);
+```
+
+This means **only** the code you need for the login page downloads initially.
+
+---
+
+## 3. Auth Context with Callback Hooks
+
+In your `AuthProvider`:
+
+```ts
+// src/providers/AuthProvider.tsx
+'use client';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+
+interface AuthContextProps {
+  user: string | null;
+  login: (username: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be in AuthProvider');
+  return ctx;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<string | null>(localStorage.getItem('user'));
+  const [loading, setLoading] = useState(false);
+
+  const login = useCallback(async (username: string) => {
+    setLoading(true);
+    // simulate network / call your API
+    await new Promise(res => setTimeout(res, 800));
+    localStorage.setItem('user', username);
+    setUser(username);
+    setLoading(false);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('user');
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+```
+
+* **`useCallback`** ensures `login` & `logout` don’t re-create on every render, which helps any dependent `useEffect` hooks to stay stable.
+* **Centralized loading state** exposes a consistent spinner flag everywhere.
+
+---
+
+## 4. Putting It All Together
+
+* Wrap your app in `<AuthProvider>` and (if you haven’t already) a `<DrawerProvider>`.
+* Define a shared `LoadingOverlay` component for suspending.
+* Lazy load heavy pages/components.
+* Use **React Hook Form** + **MUI** for slick forms with inline validation & tooltips.
+
+This stack gives you:
+
+1. **Tiny initial bundles** (via lazy+Suspense).
+2. **Global async loading flags** (in `AuthProvider`).
+3. **Form performance & validation** without boilerplate.
+4. **DRY callbacks** with `useCallback`.
+5. **In-context tips** with MUI’s `Tooltip`.
+
+That should get you well on your way to a maintainable, fast, and user-friendly login—and a blueprint you can replicate across your entire site. Let me know if you’d like more detail on any piece!

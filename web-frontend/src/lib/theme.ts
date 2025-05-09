@@ -112,3 +112,24 @@ export const darkTheme = createTheme({
     },
   },
 });
+
+// design-tokens.js
+export const tokens = {
+  color: {
+    primary: "#6200ee",
+    secondary: "#03dac6",
+    text: { light: "#333", dark: "#fff" },
+  },
+  spacing: [0, 4, 8, 16, 32, 64],
+  fontSize: { sm: 10, md: 20, lg: 35, xl: 50 },
+};
+
+export const muiTheme = createTheme({
+  palette: {
+    primary: { main: tokens.color.primary },
+    secondary: { main: tokens.color.secondary },
+    text: { primary: tokens.color.text.light },
+  },
+  spacing: (v: number) => tokens.spacing[v],
+  typography: { fontSize: tokens.fontSize.md },
+});

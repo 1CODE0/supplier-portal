@@ -14,6 +14,8 @@ import { getMode, getSettingsFromCookie } from "./utilities/cookieUtils";
 import { useSettings } from "./hooks/useSettings";
 import { darkTheme, lightTheme } from "./lib/theme";
 import { SettingsProvider } from "./contexts/settingsContext";
+import ModeDropdown from "./utilities/ModeDropdown";
+import { DrawerProvider } from "./contexts/DrawerContext";
 
 function ThemedAppContent() {
   const { settings } = useSettings();
@@ -24,16 +26,29 @@ function ThemedAppContent() {
       <CssBaseline />
 
       <header>
-        <Box sx={{ bgcolor: "primary.main", color: "#fff", py: 1 }}>
+        <Box
+          sx={{
+            bgcolor: "primary.main",
+            color: "#fff",
+            py: 1,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           <Container maxWidth="md">
             <Typography variant="h6">Smart Supplier Portal</Typography>
           </Container>
+          <span style={{ width: "100px" }}>
+            <ModeDropdown />
+          </span>
         </Box>
       </header>
 
       <Container maxWidth="md" sx={{ my: 4 }}>
         <AuthProvider>
-          <AppRouter />
+          <DrawerProvider>
+            <AppRouter />
+          </DrawerProvider>
         </AuthProvider>
       </Container>
 
