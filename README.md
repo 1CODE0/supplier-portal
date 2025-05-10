@@ -1,129 +1,157 @@
 Updates over current plan:
 
-### ✅ Week 1: Project Setup & PWA Spike
+## ✅ Week 1: Project Setup & PWA Spike
 
-* **Backend**: Spring Boot + Spring Data JPA + PostgreSQL
+* **Backend**
 
-  * Initialize Gradle project
-  * Set up Swagger via SpringDoc (OpenAPI 3)
-* **Frontend**: React + Vite + TypeScript + Tailwind + MUI + TanStack Query
-* **API**: Basic `/api/orders` CRUD
-* **PWA Spike**: Register Service Worker
+  * Bootstrap Spring Boot + Spring Data JPA
+  * PostgreSQL integration
+  * API: Basic `/api/orders` CRUD
+  * Swagger/OpenAPI via SpringDoc
 
-  * Use [`vite-plugin-pwa`](https://vite-pwa-org.netlify.app/) (MIT License)
-  * Shell caching via Workbox (already included in plugin)
+* **Frontend**
 
----
+  * React (Vite + TS)
+  * TailwindCSS + MUI
+  * TanStack Query for data fetching
 
-### ✅ Week 2: Database Modeling & Full CRUD
+* **PWA**
 
-* **DB**: Use [Neon.tech](https://neon.tech/) (PostgreSQL, Free tier)
-* **Entities**: `Supplier`, `Order` with relationships
-* **Backend**:
-
-  * Define entities, repositories, service & controller layers
-* **Frontend**:
-
-  * Pages + Forms for listing, creating, updating, deleting orders/suppliers
-  * TanStack Query for data fetching/caching
+  * Register Service Worker
+  * Use [`vite-plugin-pwa`](https://vite-pwa-org.netlify.app/) (MIT)
+  * Shell precaching + offline fallback
 
 ---
 
-### 🔐 Week 3: Authentication & Authorization
+## ✅ Week 2: Database Modeling & Full CRUD
 
-* **Auth Flow**:
+* **Database**
 
-  * Spring Security for API protection
-  * Validate Supabase-issued JWTs in Spring (standard public key validation)
-* **Frontend**:
+  * Use Neon.tech (PostgreSQL, free tier)
 
-  * Supabase for user auth (Email+Password login/signup, totally free)
+* **Backend**
+
+  * Define `Supplier` & `Order` entities
+  * Repositories, services, controllers
+
+* **Frontend**
+
+  * CRUD forms & list views for suppliers/orders
+  * TanStack Query for state & caching
+
+---
+
+## 🔐 Week 3: Authentication & Authorization
+
+* **Backend**
+
+  * Add Spring Security
+  * Validate JWTs issued by Supabase (public JWKS)
+
+* **Frontend**
+
+  * Use Supabase Auth (free tier)
+  * Build Login/Register flow
   * Store JWT in localStorage
-  * Protected routes using React Router guards
+  * Protect routes via React Router guards
 
 ---
 
-### 🛰️ Week 4: Event Streaming & Search
+## 🛰️ Week 4: Event Streaming & Search
 
-* **Event Streaming**:
+* **Event Streaming**
 
-  * If okay with Redpanda (Business Source License + open dev use), use it
-  * If licensing is a concern, go with:
+  * Emit events on order changes
+  * Use:
 
-    * **Apache Kafka** (Open Source)
-    * or **RabbitMQ** (Erlang License, free)
-* **Search Engine**:
+    * Redpanda (if AGPL is OK)
+    * Or fallback: **Apache Kafka** / **RabbitMQ** (Apache 2.0 / Erlang)
 
-  * Skip Typesense (GPL)
-  * Use **OpenSearch** (Apache 2.0) — ElasticSearch OSS fork
-  * Index Orders + Suppliers for full-text search
-* **Frontend**:
+* **Search**
 
-  * Debounced real-time search input (with TanStack Query)
+  * Sync events to search index
+  * Use **OpenSearch** (Apache 2.0, Elasticsearch OSS fork)
+  * Expose API for search
+
+* **Frontend**
+
+  * Real-time debounced search UI
+  * Display live results from OpenSearch
 
 ---
 
-### 🔌 Week 5: Offline Capabilities
+## 🔌 Week 5: Offline Capabilities
 
-* **PWA**:
+* **PWA**
 
-  * Full PWA with `vite-plugin-pwa` (precaching, runtime caching, update events)
-* **Storage**:
+  * Full PWA with `vite-plugin-pwa`
+  * Runtime caching via Workbox
+
+* **Storage**
 
   * IndexedDB via **Dexie.js** (Apache 2.0)
-* **Sync**:
 
-  * Queue offline updates and sync when back online
-  * Backend to handle upserts from sync payload
+* **Sync Logic**
 
----
-
-### 🚢 Week 6: Deployment & Nginx
-
-* **Backend**:
-
-  * Containerize Spring Boot app
-  * Deploy to **Fly.io** (Free tier)
-* **Frontend**:
-
-  * Host static React build on **Cloudflare Pages** (Free tier, blazing fast)
-  * Use **Nginx** as reverse proxy (Dockerized)
-  * Enable gzip, SSL, SPA fallback, and caching rules
+  * Queue offline actions
+  * Sync back to server when online
+  * Backend handles upserts for conflict resolution
 
 ---
 
-### ✅ Week 7: Documentation, Testing & Monitoring
+## 🚀 Week 6: Deployment & Nginx
 
-* **Docs**:
+* **Backend**
 
-  * Swagger UI (backend)
-  * **Storybook** (MIT) for React components
-* **Tests**:
+  * Dockerize Spring Boot
+  * Deploy to **Fly.io** (free tier)
 
-  * Backend: JUnit + MockMvc
-  * Frontend: RTL + **Cypress** for E2E (free tier)
-* **Monitoring**:
+* **Frontend**
 
-  * Errors: **Sentry** (free for personal projects)
-  * Metrics: **Prometheus + Grafana** (MIT, open-source stack)
+  * Build + deploy to **Cloudflare Pages** (free)
+  * Use **Nginx**:
+
+    * As reverse proxy
+    * With gzip, SSL, and SPA fallback config
 
 ---
 
-### 🧩 Notes:
+## ✅ Week 7: Documentation, Testing & Monitoring
 
-| Area            | Tool                    | License / Cost           |
-| --------------- | ----------------------- | ------------------------ |
-| Database        | Neon (Postgres)         | Free Tier (Cloud)        |
-| Backend         | Spring Boot             | Apache 2.0 (Free)        |
-| Frontend        | React + Vite + Tailwind | MIT / Open Source        |
-| Auth            | Supabase Auth           | Free tier + Public JWKS  |
-| PWA             | `vite-plugin-pwa`       | MIT                      |
-| Event Streaming | Kafka or RabbitMQ       | Apache 2.0 / Erlang      |
-| Search          | OpenSearch              | Apache 2.0               |
-| Deployment (BE) | Fly.io                  | Free tier (256MB, 3 VMs) |
-| Deployment (FE) | Cloudflare Pages        | Free                     |
-| Monitoring      | Sentry / Prometheus     | Free                     |
-| Testing         | JUnit, Cypress, RTL     | Free                     |
+* **Documentation**
+
+  * Swagger UI for API
+  * Storybook (MIT) for UI components
+
+* **Testing**
+
+  * Backend: JUnit, MockMvc
+  * Frontend: React Testing Library + Cypress (E2E)
+
+* **Monitoring**
+
+  * Errors: **Sentry** (free personal tier)
+  * Metrics/Alerts: **Prometheus + Grafana** (MIT)
+
+---
+
+## 🧩 Licensing-Safe Tooling Choices
+
+| Feature         | Tool                 | License         | Notes                           |
+| --------------- | -------------------- | --------------- | ------------------------------- |
+| DB              | Neon (Postgres)      | Free Tier       | Cloud Postgres                  |
+| Backend         | Spring Boot          | Apache 2.0      | Free + mature                   |
+| Frontend        | React, Vite          | MIT             | Modern toolchain                |
+| Styling         | Tailwind, MUI        | MIT             | Customizable + rich components  |
+| Auth            | Supabase             | Free Tier       | JWT-based, open API             |
+| Event Streaming | Kafka / RabbitMQ     | Apache / Erlang | Avoid AGPL (Redpanda fallback)  |
+| Search          | OpenSearch           | Apache 2.0      | Safe Elasticsearch alt          |
+| PWA             | Vite PWA Plugin      | MIT             | Workbox baked in                |
+| Monitoring      | Prometheus + Grafana | MIT             | Full observability              |
+| Errors          | Sentry               | Free Plan       | Add only client+server tracking |
+| Testing         | Cypress, JUnit, RTL  | Free            | Good coverage potential         |
+| Deployment (BE) | Fly.io               | Free Tier       | Simple + container native       |
+| Deployment (FE) | Cloudflare Pages     | Free Tier       | Blazing fast edge hosting       |
 
 ---
 
