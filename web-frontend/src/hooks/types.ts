@@ -8,14 +8,14 @@
  */
 
 // MUI Imports
-import type { ComponentsOverrides } from "@mui/material/styles";
+// import type { ComponentsOverrides } from "@mui/material/styles";
 
 // Type Imports
-import type {
-  CustomInputHorizontalProps,
-  CustomInputVerticalProps,
-  CustomInputImgProps,
-} from "@core/components/custom-inputs/types";
+// import type {
+//   CustomInputHorizontalProps,
+//   CustomInputVerticalProps,
+//   CustomInputImgProps,
+// } from "@core/components/custom-inputs/types";
 
 declare module "@mui/material/styles" {
   // eslint-disable-next-line lines-around-comment
@@ -124,26 +124,26 @@ declare module "@mui/material/styles" {
     MuiCustomImage: "root" | "image" | "input";
   }
 
-  interface ComponentsPropsList {
-    MuiCustomInputHorizontal: CustomInputHorizontalProps;
-    MuiCustomInputVertical: CustomInputVerticalProps;
-    MuiCustomImage: CustomInputImgProps;
-  }
+  // interface ComponentsPropsList {
+  //   MuiCustomInputHorizontal: CustomInputHorizontalProps;
+  //   MuiCustomInputVertical: CustomInputVerticalProps;
+  //   MuiCustomImage: CustomInputImgProps;
+  // }
 
-  interface Components {
-    MuiCustomInputHorizontal?: {
-      defaultProps?: ComponentsPropsList["MuiCustomInputHorizontal"];
-      styleOverrides?: ComponentsOverrides<Theme>["MuiCustomInputHorizontal"];
-    };
-    MuiCustomInputVertical?: {
-      defaultProps?: ComponentsPropsList["MuiCustomInputVertical"];
-      styleOverrides?: ComponentsOverrides<Theme>["MuiCustomInputVertical"];
-    };
-    MuiCustomImage?: {
-      defaultProps?: ComponentsPropsList["MuiCustomImage"];
-      styleOverrides?: ComponentsOverrides<Theme>["MuiCustomImage"];
-    };
-  }
+  // interface Components {
+  //   MuiCustomInputHorizontal?: {
+  //     defaultProps?: ComponentsPropsList["MuiCustomInputHorizontal"];
+  //     styleOverrides?: ComponentsOverrides<Theme>["MuiCustomInputHorizontal"];
+  //   };
+  //   MuiCustomInputVertical?: {
+  //     defaultProps?: ComponentsPropsList["MuiCustomInputVertical"];
+  //     styleOverrides?: ComponentsOverrides<Theme>["MuiCustomInputVertical"];
+  //   };
+  //   MuiCustomImage?: {
+  //     defaultProps?: ComponentsPropsList["MuiCustomImage"];
+  //     styleOverrides?: ComponentsOverrides<Theme>["MuiCustomImage"];
+  //   };
+  // }
 }
 
 declare module "@mui/material/Chip" {

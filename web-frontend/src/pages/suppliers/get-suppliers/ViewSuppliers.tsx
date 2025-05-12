@@ -12,23 +12,24 @@ import {
   Card,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useListOrders } from "../../../hooks/useOrders";
+import { useListSuppliers } from "../../../hooks/useSuppliers";
 import { ePathVariables } from "../../../config/SupplierConfig";
 
-export default function OrdersPage() {
-  const { orders, isLoading } = useListOrders();
+export default function ViewSuppliers() {
+  const { suppliers, isLoading } = useListSuppliers();
   const navigate = useNavigate();
 
-  if (isLoading)
+  if (isLoading) {
     return (
       <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
     );
+  }
 
   return (
     <Box>
       <Card>
         <div
-          title="ORDERS"
+          title="SUPPLIERS"
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -36,34 +37,41 @@ export default function OrdersPage() {
             padding: "5px 10px",
           }}
         >
-          <Typography variant="h4">ORDERS</Typography>
+          <Typography variant="h4">Suppliers</Typography>
           <Button
             variant="contained"
             sx={{ bgcolor: "secondary.main" }}
-            onClick={() => navigate(ePathVariables.NEW_ORDERS)}
+            onClick={() => navigate(ePathVariables.NEW_SUPPLIERS)}
           >
-            New Order
+            New Supplier
           </Button>
         </div>
         <List component={Paper}>
-          {orders.length > 0 ? (
-            orders.map((o) => {
+          {suppliers.length > 0 ? (
+            suppliers.map((supplier) => {
               return (
-                <ListItem key={o.id} divider>
+                <ListItem key={supplier.id} divider>
                   <ListItemText
-                    primary={`${o.supplier?.name} — $${o.totalAmount?.toFixed(
-                      2
-                    )}`}
+                    primary={`${supplier.name} — $${supplier.address}`}
                     secondary={new Date(
-                      Number(o.createdAt) * 1000
+                      Number(supplier.createdAt) * 1000
                     ).toLocaleString()}
                   />
+                  {/* <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <Button
+                      onClick={() => navigate(ePathVariables.NEW_SUPPLIERS)}
+                      variant="contained"
+                    >
+                      Update
+                    </Button>
+                    <Button onClick={() => showConfirmationPopup(supplier)} variant="outlined">Delete</Button>
+                  </div> */}
                 </ListItem>
               );
             })
           ) : (
             <ListItem>
-              <ListItemText primary="No orders yet." />
+              <ListItemText primary="No Suppliers available." />
             </ListItem>
           )}
         </List>

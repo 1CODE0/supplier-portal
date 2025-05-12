@@ -1,0 +1,18 @@
+/*  */
+/* General toast styles */
+.customToast {
+  background-color: var(--colorBgBase); /* Background color from CSS variable */
+  color: white; /* White text color */
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional styling */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Maintain alignment for toasts */
+}
+
+/* Optional: You can fine-tune the z-index to ensure toast stacking */
+.Toastify__toast-container {
+  z-index: 9999; /* Ensure toasts appear on top of everything else */
+}

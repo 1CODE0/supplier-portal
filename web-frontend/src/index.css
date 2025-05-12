@@ -18,7 +18,7 @@ body {
   background-color: #d5efff9a;
   color: #e0e0e0;
   line-height: 1.5;
-  min-height: 100vh;
+  /* min-height: 100vh; */
 }
 
 /* Smooth scroll behavior */

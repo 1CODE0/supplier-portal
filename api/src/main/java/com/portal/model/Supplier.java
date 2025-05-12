@@ -26,18 +26,6 @@ public class Supplier extends Auditable {
 
     private String address;
 
-    // @PrePersist
-    // protected void onCreate() {
-    // Instant now = Instant.now();
-    // this.createdAt = now;
-    // this.updatedAt = now;
-    // }
-
-    // @PreUpdate
-    // protected void onUpdate() {
-    // this.updatedAt = Instant.now();
-    // }
-
     public UUID getId() {
         return id;
     }

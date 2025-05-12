@@ -21,14 +21,11 @@ import SunLineIcon from "remixicon-react/SunLineIcon";
 import style from "./mode-dropdown.module.css";
 
 const ModeDropdown = () => {
-  // States
   const [open, setOpen] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
 
-  // Refs
   const anchorRef = useRef<HTMLButtonElement>(null);
 
-  // Hooks
   const { settings, updateSettings } = useSettings();
 
   const handleClose = () => {
@@ -61,7 +58,7 @@ const ModeDropdown = () => {
   return (
     <>
       <Tooltip
-        title={settings.mode + " Mode"}
+        title={settings.mode?.toLocaleUpperCase() + " MODE"}
         onOpen={() => setTooltipOpen(true)}
         onClose={() => setTooltipOpen(false)}
         open={open ? false : tooltipOpen ? true : false}

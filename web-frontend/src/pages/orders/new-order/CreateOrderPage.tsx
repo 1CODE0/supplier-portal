@@ -20,6 +20,7 @@ import {
   useSupplierActions,
 } from "../../../hooks/useSuppliers";
 import customToast from "../../../utilities/customToast";
+import { ePathVariables } from "../../../config/SupplierConfig";
 
 export default function NewOrderPage() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function NewOrderPage() {
       };
 
       await createOrder(payload);
-      navigate("/orders");
+      navigate(ePathVariables.ORDERS);
     } catch {
       customToast("error", "Failed to create order.");
     }
@@ -124,20 +125,15 @@ export default function NewOrderPage() {
         />
 
         <Box sx={{ position: "relative", width: "fit-content", mt: 2 }}>
-          <Button type="submit" variant="contained" disabled={busy}>
-            Create Order
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit(onSubmit)}
+            disabled={busy}
+            startIcon={busy && <CircularProgress size={20} />}
+          >
+            {busy ? "Creating Order…" : "Create Order"}
           </Button>
-          {busy && (
-            <CircularProgress
-              size={24}
-              sx={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          )}
         </Box>
       </Box>
     </Paper>

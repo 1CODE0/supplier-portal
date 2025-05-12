@@ -1,7 +1,6 @@
 package com.portal.service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,11 +45,6 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Supplier not found: " + supplierId));
 
         o.setSupplier(supplier);
-        o.setOrderDate(LocalDateTime.now());
-        o.setStatus(o.getStatus());
-        o.setCreatedAt(Instant.now());
-        o.setUpdatedAt(Instant.now());
-
         return orderRepository.save(o);
     }
 
@@ -59,7 +53,6 @@ public class OrderService {
         existing.setStatus(o.getStatus());
         existing.setTotalAmount(o.getTotalAmount());
         existing.setDescription(o.getDescription());
-        existing.setUpdatedAt(Instant.now());
 
         UUID supplierId = o.getSupplier().getId();
 

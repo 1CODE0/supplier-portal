@@ -1,8 +1,14 @@
 import { ToastContainer } from "react-toastify";
 import useThemePalette from "../hooks/useThemePalette";
+import style from "./toast.module.css";
 
 const CustomToastContainer = () => {
   const { custom } = useThemePalette();
+
+  const cssVars = {
+    "--colorBgBase": custom.colorBgBase,
+    "--colorText": custom.colorText,
+  } as React.CSSProperties;
 
   return (
     <ToastContainer
@@ -11,7 +17,14 @@ const CustomToastContainer = () => {
       newestOnTop
       closeOnClick
       pauseOnHover
-      style={{ background: custom.colorBgBase }}
+      style={{
+        ...cssVars,
+        ...{
+          top: "10px", // Adjust if needed to fine-tune vertical positioning
+          right: "10px", // Adjust if needed to fine-tune horizontal positioning
+        },
+      }}
+      toastClassName={() => style.customToast}
     />
   );
 };

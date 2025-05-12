@@ -1,7 +1,8 @@
 import { Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ePathVariables } from "../config/SupplierConfig";
 
-export const NotFoundPage = () => {
+const NotFoundPage = () => {
   const navigate = useNavigate();
 
   return (
@@ -21,7 +22,7 @@ export const NotFoundPage = () => {
       <Button
         variant="contained"
         color="primary"
-        onClick={() => navigate("/orders")}
+        onClick={() => navigate(ePathVariables.ORDERS)}
         sx={{ mt: 3 }}
       >
         Back to Orders
@@ -29,3 +30,5 @@ export const NotFoundPage = () => {
     </Box>
   );
 };
+
+export default NotFoundPage;

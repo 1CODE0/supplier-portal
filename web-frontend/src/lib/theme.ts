@@ -81,8 +81,10 @@ const baseColors = {
 export const lightTheme = createTheme({
   palette: {
     mode: "light",
-    primary: { main: blue[700] },
-    secondary: { main: grey[700] },
+    primary: { main: blue[800] },
+    secondary: { main: grey[800] },
+    // text: { primary: purple[800], secondary: green[800] },
+
     background: { default: baseColors.neutralLight, paper: "#FFFFFF" },
     customColors: {
       ...baseColors,
@@ -103,8 +105,8 @@ export const lightTheme = createTheme({
 export const darkTheme = createTheme({
   palette: {
     mode: "dark",
-    primary: { main: blue[200] },
-    secondary: { main: grey[500] },
+    primary: { main: blue[400] },
+    secondary: { main: grey[300] },
     background: { default: "#121212", paper: grey[900] },
     customColors: {
       ...baseColors,

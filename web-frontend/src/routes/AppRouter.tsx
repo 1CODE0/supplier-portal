@@ -1,66 +1,92 @@
 // src/router/AppRouter.tsx
+import React, { lazy, Suspense } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
+  Outlet,
+  ScrollRestoration,
+  PrefetchPageLinks,
 } from "react-router-dom";
 import { AuthGuard } from "./AuthGuard";
-import OrdersPage from "../pages/orders/get-order/ViewOrders";
-import NewOrderPage from "../pages/orders/new-order/CreateOrderPage";
-import { NotFoundPage } from "../pages/NotFoundPage";
-import { LoginPage } from "../pages/LoginPage";
-import ErrorPage from "../ErrorPage";
+import NavBar from "../utilities/NavBar";
+import { CustomLoader } from "../utilities/CustomLoader";
+import { ePathVariables } from "../config/SupplierConfig";
 
-const router = createBrowserRouter(
-  [
-    {
-      path: "/",
-      element: <Navigate to="/orders" replace />,
-    },
-    {
-      path: "/login",
-      element: <LoginPage />,
-    },
-    {
-      element: <AuthGuard />,
-      children: [
-        {
-          path: "/orders",
-          element: <OrdersPage />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: "/orders/new",
-          element: <NewOrderPage />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: "/suppliers",
-          element: <NewOrderPage />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: "/suppliers/new",
-          element: <NewOrderPage />,
-          errorElement: <ErrorPage />,
-        },
+// Lazy-loaded pages
+const OrdersPage = lazy(() => import("../pages/orders/get-order/ViewOrders"));
+const NewOrderPage = lazy(
+  () => import("../pages/orders/new-order/CreateOrderPage")
+);
+const ViewSuppliers = lazy(
+  () => import("../pages/suppliers/get-suppliers/ViewSuppliers")
+);
+const CreateSupplierPage = lazy(
+  () => import("../pages/suppliers/new-supplier/CreateSupplierPage")
+);
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
+const ErrorPage = lazy(() => import("../ErrorPage"));
 
-        // Add more nested protected routes here
-      ],
-    },
-    {
-      path: "*",
-      element: <NotFoundPage />,
-    },
-  ],
-  {
-    future: {
-      v7_startTransition: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
-  }
+// Reusable Suspense wrapper
+const withLoader = (Component: React.LazyExoticComponent<React.FC>) => (
+  <Suspense fallback={<CustomLoader />}>
+    <Component />
+  </Suspense>
 );
 
-export const AppRouter = () => {
-  return <RouterProvider router={router} />;
-};
+// Root layout with NavBar
+const RootLayout: React.FC = () => (
+  <>
+    <NavBar />
+    <ScrollRestoration />
+    <PrefetchPageLinks page="orders" />
+    <PrefetchPageLinks page="suppliers" />
+    <Outlet />
+  </>
+);
+
+// Router definition
+const router = createBrowserRouter(
+  [
+    { path: "/", element: <Navigate to={ePathVariables.ORDERS} replace /> },
+    { path: "/login", element: withLoader(LoginPage) },
+    {
+      element: <AuthGuard />, // Wrap protected routes
+      errorElement: withLoader(ErrorPage),
+      children: [
+        {
+          element: <RootLayout />, // Chrome + NavBar
+          children: [
+            {
+              id: "orders",
+              path: `${ePathVariables.ORDERS}`,
+              element: withLoader(OrdersPage),
+            },
+            {
+              id: "orders-new",
+              path: `${ePathVariables.NEW_ORDERS}`,
+              element: withLoader(NewOrderPage),
+            },
+            {
+              id: "suppliers",
+              path: `${ePathVariables.SUPPLIERS}`,
+              element: withLoader(ViewSuppliers),
+            },
+            {
+              id: "suppliers-new",
+              path: `${ePathVariables.NEW_SUPPLIERS}`,
+              element: withLoader(CreateSupplierPage),
+            },
+          ],
+        },
+      ],
+    },
+    { path: "*", element: withLoader(NotFoundPage) },
+  ]
+  // {
+  //   future: { v7_startTransition: true },
+  // }
+);
+
+export const AppRouter: React.FC = () => <RouterProvider router={router} />;

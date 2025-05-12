@@ -1,6 +1,6 @@
 // src/pages/LoginPage.tsx
 "use client";
-import React, { useEffect, useCallback, Suspense } from "react";
+import { useEffect, useCallback, Suspense } from "react";
 import {
   Button,
   Paper,
@@ -13,12 +13,14 @@ import {
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { CustomLoader } from "../utilities/CustomLoader";
+import { ePathVariables } from "../config/SupplierConfig";
 
 interface FormValues {
   username: string;
 }
 
-export const LoginPage: React.FC = () => {
+const LoginPage = () => {
   const { login, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const {
@@ -29,20 +31,20 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (localStorage.getItem("user")) {
-      navigate("/orders", { replace: true });
+      navigate(ePathVariables.ORDERS, { replace: true });
     }
   }, [navigate]);
 
   const onSubmit = useCallback(
     async (data: FormValues) => {
       await login(data.username);
-      navigate("/orders", { replace: true });
+      navigate(ePathVariables.ORDERS, { replace: true });
     },
     [login, navigate]
   );
 
   return (
-    <Suspense fallback={<LoadingOverlay />}>
+    <Suspense fallback={<CustomLoader />}>
       <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: "auto", mt: 10 }}>
         <Typography variant="h5" gutterBottom fontWeight="bold">
           Welcome to Smart Supplier Portal
@@ -91,18 +93,4 @@ export const LoginPage: React.FC = () => {
   );
 };
 
-const LoadingOverlay: React.FC = () => (
-  <Box
-    sx={{
-      position: "fixed",
-      inset: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "rgba(255,255,255,0.8)",
-      zIndex: (theme) => theme.zIndex.modal,
-    }}
-  >
-    <CircularProgress size={60} />
-  </Box>
-);
+export default LoginPage;
