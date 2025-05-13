@@ -69,6 +69,11 @@ const router = createBrowserRouter(
               element: withLoader(NewOrderPage),
             },
             {
+              id: "orders-edit",
+              path: `${ePathVariables.EDIT_ORDERS + ePathVariables.ID}`,
+              element: withLoader(NewOrderPage),
+            },
+            {
               id: "suppliers",
               path: `${ePathVariables.SUPPLIERS}`,
               element: withLoader(ViewSuppliers),
@@ -76,6 +81,11 @@ const router = createBrowserRouter(
             {
               id: "suppliers-new",
               path: `${ePathVariables.NEW_SUPPLIERS}`,
+              element: withLoader(CreateSupplierPage),
+            },
+            {
+              id: "suppliers-edit",
+              path: `${ePathVariables.EDIT_SUPPLIERS + ePathVariables.ID}`,
               element: withLoader(CreateSupplierPage),
             },
           ],

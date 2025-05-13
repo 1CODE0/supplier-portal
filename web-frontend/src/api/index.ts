@@ -8,6 +8,7 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export { Order } from './models/Order';
+export { OrderInputDto } from './models/OrderInputDto';
 export type { Supplier } from './models/Supplier';
 
 export { OrderControllerService } from './services/OrderControllerService';

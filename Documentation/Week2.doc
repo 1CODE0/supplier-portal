@@ -360,4 +360,308 @@ This stack gives you:
 That should get you well on your way to a maintainable, fast, and user-friendly login—and a blueprint you can replicate across your entire site. Let me know if you’d like more detail on any piece!
 
 
+final must do optimizations for week-2:
+You’re already on the right track by centralizing all your data‐fetch and mutation logic into a single “suppliers” hooks file, and using a helper to normalize your `UseMutationResult` into a consistent shape. Here are a few thoughts and tweaks to make it even more robust, type-safe, and “plug-and-play”:
 
+---
+
+## 1. **Tighten Up Your `mapMutation`**
+
+Right now you’re mapping `mutation.isPending` → `isLoading`. React Query’s API is officially `isLoading` / `isError` / `isSuccess` / `isIdle` / `isFetching`. I’d mirror those names exactly to avoid confusion:
+
+```ts
+function mapMutation<
+  TData,
+  TError,
+  TVariables,
+  TContext = unknown
+>(
+  m: UseMutationResult<TData, TError, TVariables, TContext>
+) {
+  return {
+    mutate:   m.mutateAsync,
+    isIdle:   m.isIdle,
+    isLoading: m.isLoading,  // instead of isPending
+    isError:  m.isError,
+    error:    m.error,
+    isSuccess:m.isSuccess,
+    data:     m.data,
+  };
+}
+```
+
+---
+
+## 2. **Combine `useSupplierActions` Into `useSupplier`**
+
+Rather than a separate “actions” hook, you can bundle **fetch**, **create**, **update**, and **delete** all under one `useSupplier` hook (or `useSuppliers` if you prefer):
+
+```ts
+export function useSuppliers() {
+  const qc = useQueryClient();
+
+  const list = useQuery<Supplier[], Error>({
+    queryKey: ['suppliers'],
+    queryFn: () => SupplierControllerService.listSuppliers(),
+    staleTime: 300_000,
+  });
+
+  const fetchOne = (id: string) =>
+    qc.fetchQuery<Supplier, Error>({
+      queryKey: ['supplier', id],
+      queryFn: () => SupplierControllerService.getSupplierById(id),
+      staleTime: 120_000,
+    });
+
+  const create = mapMutation(
+    useMutation(
+      (data: Supplier) => SupplierControllerService.createSupplier(data),
+      {
+        onSuccess: () => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', 'Supplier created!');
+        },
+      }
+    )
+  );
+
+  const update = mapMutation(
+    useMutation(
+      ({ id, data }: { id: string; data: Supplier }) =>
+        SupplierControllerService.updateSupplier(id, data),
+      {
+        onSuccess: () => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', 'Supplier updated!');
+        },
+      }
+    )
+  );
+
+  const remove = mapMutation(
+    useMutation(
+      (id: string) => SupplierControllerService.deleteSupplier(id),
+      {
+        onSuccess: (_, id) => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', `Supplier ${id} deleted!`);
+        },
+      }
+    )
+  );
+
+  return { list, fetchOne, create, update, remove };
+}
+```
+
+**Usage**:
+
+```ts
+const { list, fetchOne, create, update, remove } = useSuppliers();
+
+// List page
+const { data: suppliers, isLoading } = list;
+
+// Detail/Edit page
+useEffect(() => {
+  if (id) {
+    fetchOne(id).then(supp => reset(mapToForm(supp)));
+  }
+}, [id]);
+
+// Form submit
+if (id) await update.mutate({ id, data: _data });
+else    await create.mutate(_data);
+
+// Delete
+remove.mutate(id);
+```
+
+---
+
+## 3. **Prefetch + `useQuery` in Forms**
+
+Instead of manually calling `fetchOne` inside an effect, you can turn that into a React Query powered form hook:
+
+```ts
+export function useSupplierForm(id?: string) {
+  const { fetchOne, create, update } = useSuppliers();
+
+  // this will cache the supplier and give you typed data
+  const { data, isFetching } = useQuery(
+    ['supplier', id],
+    () => fetchOne(id!),
+    { enabled: Boolean(id) }
+  );
+
+  const save = id
+    ? (data: Supplier) => update.mutateAsync({ id: id!, data })
+    : (data: Supplier) => create.mutateAsync(data);
+
+  return { data, isFetching, save };
+}
+```
+
+Then in your page:
+
+```tsx
+const { control, handleSubmit, reset } = useForm<SupplierInput>({ resolver });
+const { data: supplier, isFetching, save } = useSupplierForm(id);
+
+useEffect(() => {
+  if (supplier) reset(mapToForm(supplier));
+}, [supplier]);
+
+const onSubmit = (values: SupplierInput) =>
+  save(transform(values)).then(() => navigate(…));
+```
+
+---
+
+## 4. **Why This Is More Robust**
+
+* **One Hook** (`useSuppliers`) for all CRUD keeps naming consistent and centralizes query invalidations.
+* **Strong Typing** everywhere—no `unknown` creeping in.
+* **React Query Auto-cancellations**: switching pages, unmounting, etc.
+* **Consistent API Shape**: `list`, `fetchOne`, `create`, `update`, `remove` everywhere.
+* **Form-friendly**: `useSupplierForm` wraps fetch + save logic, so your pages/forms stay ultra-lean.
+
+---
+
+### TL;DR
+
+Keep your CRUD in one hook (or two if you want to separate list vs. single-entity), mirror React Query’s status flags, and add a little helper hook for forms. This gives you a rock-solid, type-safe, DRY setup that’s trivial to use in lists, details, and forms.
+
+Good question. The `valueSources` and other props in React Awesome Query Builder (`Fields`) configs control **how the value for a rule can be entered**, what **input UI widget** is used, what **operators** are allowed, and how the logic should behave in the query. Here's a breakdown of the most commonly used ones and what they do — **no sugar, just straight utility**:
+
+---
+
+*********************** In case if you need some React Awesome Query Builder (basically a JS to SQL commands converter)
+### 🔹 `valueSources: ['value']`
+
+This defines **where the user can get the value from**. Typical values:
+
+* `'value'` → User manually types or selects a value.
+* `'field'` → Value comes from another field (i.e., compare two fields).
+* `'func'` → Value comes from a function (e.g., `NOW()`, `TODAY()`, etc.).
+
+**Example:**
+
+```ts
+valueSources: ['value']  // user selects or types a literal value
+```
+
+If you include multiple:
+
+```ts
+valueSources: ['value', 'field']  // user can choose between entering a value or referencing another field
+```
+
+---
+
+### 🔹 `type`
+
+Defines the **data type** of the field, which determines default operators and widgets.
+
+* `'text'`
+* `'number'`
+* `'select'`
+* `'boolean'`
+* `'date'`
+* `'datetime'`
+* `'time'`
+* `'multiselect'`
+
+---
+
+### 🔹 `operators`
+
+List of **comparison operations** allowed on this field.
+
+* For `'text'`: `['equal', 'not_equal', 'contains']`
+* For `'number'`: `['equal', 'less', 'greater']`
+* For `'boolean'`: `['equal']`
+
+**Example:**
+
+```ts
+operators: ['equal', 'not_equal', 'is_empty']
+```
+
+---
+
+### 🔹 `widgets`
+
+Customize the UI input widget per type or operator. You can override the default component.
+
+```ts
+widgets: {
+  text: {
+    widgetProps: {
+      maxLength: 50
+    }
+  }
+}
+```
+
+---
+
+### 🔹 `fieldSettings`
+
+Fine-tune field behavior: min/max for numbers, format for dates, etc.
+
+**Example:**
+
+```ts
+fieldSettings: {
+  min: 1,
+  max: 100,
+  step: 1
+}
+```
+
+---
+
+### 🔹 `listValues`
+
+Only applies when `type: 'select'` or `multiselect`. It's the list of allowed values.
+
+**Example:**
+
+```ts
+listValues: {
+  active: 'Active',
+  inactive: 'Inactive'
+}
+```
+
+Or in array format:
+
+```ts
+listValues: [
+  { value: 'active', title: 'Active' },
+  { value: 'inactive', title: 'Inactive' }
+]
+```
+
+---
+
+### 🔹 `defaultOperator`, `defaultValue`, `defaultValueSrc`
+
+Self-explanatory: used to initialize a rule.
+
+---
+
+### TL;DR Table
+
+| Prop            | Purpose                                           |
+| --------------- | ------------------------------------------------- |
+| `valueSources`  | Where value can come from (`value`, `field`, etc) |
+| `type`          | Field data type (`text`, `number`, etc)           |
+| `operators`     | Allowed rule operators                            |
+| `fieldSettings` | Field-specific settings (min, max, format)        |
+| `listValues`    | Options for select fields                         |
+| `widgets`       | Customize the input widget                        |
+| `defaultValue`  | Initial value for rule                            |
+
+---

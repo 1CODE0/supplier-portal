@@ -10,19 +10,31 @@ import {
   Box,
   CircularProgress,
   Card,
+  Chip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useListOrders } from "../../../hooks/useOrders";
 import { ePathVariables } from "../../../config/SupplierConfig";
+import EditDeleteActions from "../../../utilities/EditDeleteActions";
+import customToast from "../../../utilities/customToast";
+import { useOrderList, useOrders } from "../../../hooks/useOrders";
 
 export default function OrdersPage() {
-  const { orders, isLoading } = useListOrders();
+  const { remove } = useOrders();
+  const { orders, isLoading } = useOrderList();
   const navigate = useNavigate();
 
   if (isLoading)
     return (
       <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
     );
+
+  const onDeleteOrder = async (id: string) => {
+    try {
+      await remove.mutate(id);
+    } catch {
+      customToast("error", "Failed to create order.");
+    }
+  };
 
   return (
     <Box>
@@ -51,12 +63,21 @@ export default function OrdersPage() {
               return (
                 <ListItem key={o.id} divider>
                   <ListItemText
-                    primary={`${o.supplier?.name} — $${o.totalAmount?.toFixed(
-                      2
-                    )}`}
+                    primary={
+                      <div style={{ display: "flex", gap: "1rem" }}>
+                        {`${o.supplier?.name} — $${o.totalAmount?.toFixed(2)}`}
+                        <Chip label={o.status} color={"default"} size="small" />
+                      </div>
+                    }
                     secondary={new Date(
-                      Number(o.createdAt) * 1000
+                      Number(o.updatedAt) * 1000
                     ).toLocaleString()}
+                  />
+                  <EditDeleteActions
+                    id={o.id as string}
+                    updatePath={ePathVariables.EDIT_ORDERS}
+                    onDelete={() => onDeleteOrder(o.id as string)}
+                    showDelete={true}
                   />
                 </ListItem>
               );

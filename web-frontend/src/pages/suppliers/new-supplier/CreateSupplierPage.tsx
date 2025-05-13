@@ -10,47 +10,68 @@ import {
   CircularProgress,
   TextField,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useCreateSupplier } from "../../../hooks/useSuppliers";
+import { useParams } from "react-router-dom";
+import { useSuppliers } from "../../../hooks/useSuppliers";
 import customToast from "../../../utilities/customToast";
 import {
   SupplierInput,
   supplierInputSchema,
 } from "../../../models/supplierModel";
 import { Supplier } from "../../../api";
+import { useEffect } from "react";
 
 export default function CreateSupplierPage() {
-  const navigate = useNavigate();
-  const { createSupplier, isLoading: isCreating } = useCreateSupplier();
+  const { id } = useParams<{ id?: string }>();
+  const { create, update, fetchOne } = useSuppliers();
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<SupplierInput>({
     resolver: zodResolver(supplierInputSchema),
+    defaultValues: {
+      supplierName: "",
+      phone: "",
+      address: "",
+      contactEmail: "",
+    },
   });
 
-  const onSubmit = async (data: SupplierInput) => {
+  useEffect(() => {
+    if (id) {
+      fetchOne(id)
+        .then((data) => {
+          reset({
+            supplierName: data.name,
+            contactEmail: data.contactEmail,
+            ...data,
+          });
+        })
+        .catch((err) => {
+          customToast("error", err);
+        });
+    }
+  }, [id]);
+
+  const onSubmit = (data: SupplierInput) => {
     const _data: Supplier = {
       name: data.supplierName,
       address: data.address,
       ...data,
     };
-    try {
-      await createSupplier(_data);
-      navigate("/suppliers");
-    } catch {
-      customToast("error", "Failed to create order.");
-    }
+
+    if (id) update.mutate({ id, data: _data });
+    else create.mutate(_data);
   };
 
-  const busy = isSubmitting || isCreating;
+  const busy = isSubmitting || create.isLoading;
 
   return (
     <Paper sx={{ p: 4, maxWidth: 600, mx: "auto", mt: 4 }}>
       <Typography variant="h5" gutterBottom>
-        Create New Supplier
+        {id ? "Update" : "Create"} New Supplier
       </Typography>
 
       <Box
@@ -124,7 +145,9 @@ export default function CreateSupplierPage() {
             disabled={busy}
             startIcon={busy && <CircularProgress size={20} />}
           >
-            {busy ? "Creating Supplier…" : "Create Supplier"}
+            {busy
+              ? (id ? "Updating" : "Creating") + " Supplier…"
+              : (id ? "Update" : "Create") + " Supplier"}
           </Button>
         </Box>
       </Box>

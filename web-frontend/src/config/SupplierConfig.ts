@@ -8,6 +8,9 @@ export const menuItems: NavItem[] = [
 export enum ePathVariables {
   ORDERS = "/orders",
   NEW_ORDERS = "/orders/new",
+  EDIT_ORDERS = "/orders/edit",
   SUPPLIERS = "/suppliers",
   NEW_SUPPLIERS = "/suppliers/new",
+  EDIT_SUPPLIERS = "/suppliers/edit",
+  ID = "/:id",
 }

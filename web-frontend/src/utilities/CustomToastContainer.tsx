@@ -17,14 +17,15 @@ const CustomToastContainer = () => {
       newestOnTop
       closeOnClick
       pauseOnHover
+      theme={"colored"}
       style={{
         ...cssVars,
-        ...{
-          top: "10px", // Adjust if needed to fine-tune vertical positioning
-          right: "10px", // Adjust if needed to fine-tune horizontal positioning
-        },
+        // ...{
+        //   top: "10px", // Adjust if needed to fine-tune vertical positioning
+        //   right: "10px", // Adjust if needed to fine-tune horizontal positioning
+        // },
       }}
-      toastClassName={() => style.customToast}
+      // toastClassName={() => style.customToast}
     />
   );
 };

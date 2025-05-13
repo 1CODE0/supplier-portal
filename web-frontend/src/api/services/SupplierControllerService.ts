@@ -9,6 +9,51 @@ import { request as __request } from '../core/request';
 export class SupplierControllerService {
     /**
      * @param id
+     * @param requestBody
+     * @returns Supplier OK
+     * @throws ApiError
+     */
+    public static updateSupplier(
+        id: string,
+        requestBody: Supplier,
+    ): CancelablePromise<Supplier> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/suppliers/update/{id}',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns Supplier OK
+     * @throws ApiError
+     */
+    public static createSupplier(
+        requestBody: Supplier,
+    ): CancelablePromise<Supplier> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/suppliers/create',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns Supplier OK
+     * @throws ApiError
+     */
+    public static listSuppliers(): CancelablePromise<Array<Supplier>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/suppliers',
+        });
+    }
+    /**
+     * @param id
      * @returns Supplier OK
      * @throws ApiError
      */
@@ -25,26 +70,6 @@ export class SupplierControllerService {
     }
     /**
      * @param id
-     * @param requestBody
-     * @returns Supplier OK
-     * @throws ApiError
-     */
-    public static updateSupplier(
-        id: string,
-        requestBody: Supplier,
-    ): CancelablePromise<Supplier> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/suppliers/{id}',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id
      * @returns void
      * @throws ApiError
      */
@@ -53,35 +78,10 @@ export class SupplierControllerService {
     ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/suppliers/{id}',
+            url: '/api/suppliers/delete/{id}',
             path: {
                 'id': id,
             },
-        });
-    }
-    /**
-     * @returns Supplier OK
-     * @throws ApiError
-     */
-    public static listSuppliers(): CancelablePromise<Array<Supplier>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/suppliers',
-        });
-    }
-    /**
-     * @param requestBody
-     * @returns Supplier OK
-     * @throws ApiError
-     */
-    public static createSupplier(
-        requestBody: Supplier,
-    ): CancelablePromise<Supplier> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/suppliers',
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
 }

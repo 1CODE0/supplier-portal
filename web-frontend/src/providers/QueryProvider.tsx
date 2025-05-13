@@ -17,11 +17,13 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
+      gcTime: 10000 * 30,
       retry: 2,
       retryDelay: () => 2_000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
     },
+    // mutations,
   },
 });
 

@@ -12,18 +12,24 @@ import {
   Card,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useListSuppliers } from "../../../hooks/useSuppliers";
 import { ePathVariables } from "../../../config/SupplierConfig";
+import EditDeleteActions from "../../../utilities/EditDeleteActions";
+import { useSupplierList, useSuppliers } from "../../../hooks/useSuppliers";
 
 export default function ViewSuppliers() {
-  const { suppliers, isLoading } = useListSuppliers();
   const navigate = useNavigate();
+  const { remove } = useSuppliers();
+  const { suppliers, isLoading: isSuppliersLoading } = useSupplierList();
 
-  if (isLoading) {
+  if (isSuppliersLoading) {
     return (
       <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
     );
   }
+
+  const onDeleteSupplier = (id: string) => {
+    remove.mutate(id);
+  };
 
   return (
     <Box>
@@ -54,13 +60,25 @@ export default function ViewSuppliers() {
                   <ListItemText
                     primary={`${supplier.name} — $${supplier.address}`}
                     secondary={new Date(
-                      Number(supplier.createdAt) * 1000
+                      Number(supplier.updatedAt) * 1000
                     ).toLocaleString()}
                   />
+                  <EditDeleteActions
+                    id={supplier.id as string}
+                    updatePath={ePathVariables.EDIT_SUPPLIERS}
+                    onDelete={() => onDeleteSupplier(supplier.id as string)}
+                    showDelete={true}
+                  />
+
                   {/* <div style={{ display: "flex", gap: "0.5rem" }}>
                     <Button
                       onClick={() => navigate(ePathVariables.NEW_SUPPLIERS)}
                       variant="contained"
+                      onMouseEnter={() =>
+                        qc.prefetchQuery(['supplier', supplier.id], () =>
+                          fetchSupplierById(supplier.id)
+                        )
+                      } 
                     >
                       Update
                     </Button>

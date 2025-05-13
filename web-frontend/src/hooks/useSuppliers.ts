@@ -1,12 +1,31 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseMutationResult,
+} from "@tanstack/react-query";
 import { Supplier, SupplierControllerService } from "../api";
 import customToast from "../utilities/customToast";
+import { useNavigate } from "react-router";
+import { ePathVariables } from "../config/SupplierConfig";
 
-export function useListSuppliers() {
+function mapMutation<TData, TError, TVariables, TContext = unknown>(
+  mutation: UseMutationResult<TData, TError, TVariables, TContext>
+) {
+  return {
+    mutate: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
+    data: mutation.data,
+  };
+}
+
+export function useSupplierList() {
   const query = useQuery<Supplier[], Error>({
     queryKey: ["suppliers"],
     queryFn: () => SupplierControllerService.listSuppliers(),
-    staleTime: 5 * 60 * 1000,
   });
 
   return {
@@ -19,46 +38,67 @@ export function useListSuppliers() {
   };
 }
 
-export function useCreateSupplier() {
-  const queryClient = useQueryClient();
-  const mutation = useMutation<Supplier, Error, Supplier>({
-    mutationFn: (newSupplier) =>
-      SupplierControllerService.createSupplier(newSupplier),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      customToast("success", "Supplier created successfully!");
-    },
-    onError: (error) => {
-      customToast("error", `Failed to create supplier: ${error.message}`);
-    },
-  });
+export function useSuppliers() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
 
-  return {
-    createSupplier: mutation.mutateAsync,
-    isLoading: mutation.isPending,
-    isError: mutation.isError,
-    error: mutation.error,
-    isSuccess: mutation.isSuccess,
-    data: mutation.data,
-  };
-}
+  // const list = useQuery<Supplier[], Error>({
+  //   queryKey: ["suppliers"],
+  //   queryFn: () => SupplierControllerService.listSuppliers(),
+  // });
 
-export function useSupplierActions() {
-  const queryClient = useQueryClient();
-
-  const fetchSupplier = (id: string) =>
-    queryClient.fetchQuery<Supplier, Error>({
+  const fetchOne = (id: string) =>
+    qc.fetchQuery<Supplier, Error>({
       queryKey: ["supplier", id],
       queryFn: () => SupplierControllerService.getSupplierById(id),
-      staleTime: 2 * 60 * 1000,
     });
 
-  // const updateSupplier= (id: string) =>{
-  //   return queryClient.
+  const create = mapMutation(
+    useMutation<Supplier, Error, Supplier>({
+      mutationFn: (newSupplier) =>
+        SupplierControllerService.createSupplier(newSupplier),
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["suppliers"] });
+        customToast("success", "Supplier created successfully!");
+        navigate(ePathVariables.SUPPLIERS);
+      },
+      onError: (error) => {
+        customToast("error", `Failed to create supplier: ${error.message}`);
+      },
+    })
+  );
 
-  // }
+  const update = mapMutation(
+    useMutation<Supplier, Error, { id: string; data: Supplier }>({
+      mutationFn: ({ id, data }) =>
+        SupplierControllerService.updateSupplier(id, data),
 
-  return {
-    fetchSupplier,
-  };
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["suppliers"] });
+        customToast("success", "Supplier updated!");
+        navigate(ePathVariables.SUPPLIERS);
+      },
+      onError: (err) => {
+        customToast("error", `Update failed: ${err.message}`);
+      },
+    })
+  );
+
+  const remove = mapMutation(
+    useMutation<void, Error, string>({
+      mutationFn: (id: string) => SupplierControllerService.deleteSupplier(id),
+      onSuccess: (_, id) => {
+        qc.invalidateQueries({ queryKey: ["suppliers"] });
+        customToast("success", `Supplier (ID: ${id}) deleted!`);
+      },
+      onError: (err, id) => {
+        customToast(
+          "error",
+          `Failed to delete supplier (ID: ${id}): ${err.message}`
+        );
+      },
+    })
+  );
+
+  return { fetchOne, create, update, remove };
 }
