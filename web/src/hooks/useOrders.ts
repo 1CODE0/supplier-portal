@@ -1,26 +1,96 @@
-// web/src/hooks/useOrders.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { OrderControllerService } from '@/api/services/OrderControllerService'
-import type { Order } from '@/api/models/Order'
+import { useQuery, useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
+import { OrderControllerService } from '../api/services/OrderControllerService'
+import { Order, OrderInputDto } from '../api'
+import customToast from '../utilities/customToast'
+import { useNav } from './useNav'
+import { ePathVariables } from '@/config/SupplierConfig'
 
-export function useOrders() {
-  const queryClient = useQueryClient()
+function mapMutation<TData, TError, TVariables, TContext = unknown>(
+  mutation: UseMutationResult<TData, TError, TVariables, TContext>
+) {
+  return {
+    mutate: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
+    data: mutation.data
+  }
+}
 
-  const ordersQuery = useQuery<Order[]>({
+// hooks/useOrderList.ts
+export function useOrderList() {
+  const query = useQuery<Order[], Error>({
     queryKey: ['orders'],
     queryFn: () => OrderControllerService.list()
   })
 
-  const createOrder = useMutation({
-    mutationFn: (newOrder: Order) => OrderControllerService.create(newOrder),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-    }
-  })
-
   return {
-    ...ordersQuery,
-    orders: ordersQuery.data ?? [],
-    createOrder
+    orders: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    refetch: query.refetch
   }
+}
+
+export function useOrders() {
+  const qc = useQueryClient()
+  const router = useNav()
+
+  // const list = useQuery<Order[], Error>({
+  //   queryKey: ["orders"],
+  //   queryFn: () => OrderControllerService.list(),
+  // });
+
+  const fetchOne = (id: string) =>
+    qc.fetchQuery<Order, Error>({
+      queryKey: ['order', id],
+      queryFn: () => OrderControllerService.getOrderById(id)
+    })
+
+  const create = mapMutation(
+    useMutation<Order, Error, OrderInputDto>({
+      mutationFn: newSupplier => OrderControllerService.createOrder(newSupplier),
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ['orders'] })
+        customToast('success', 'Order created successfully!')
+        router.push(ePathVariables.ORDERS)
+      },
+      onError: error => {
+        customToast('error', `Failed to create order: ${error.message}`)
+      }
+    })
+  )
+
+  const update = mapMutation(
+    useMutation<Order, Error, { id: string; data: OrderInputDto }>({
+      mutationFn: ({ id, data }) => OrderControllerService.updateOrder(id, data),
+
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ['orders'] })
+        customToast('success', 'Order updated!')
+        router.push(ePathVariables.ORDERS)
+      },
+      onError: err => {
+        customToast('error', `Update failed: ${err.message}`)
+      }
+    })
+  )
+
+  const remove = mapMutation(
+    useMutation<void, Error, string>({
+      mutationFn: (id: string) => OrderControllerService.deleteOrder(id),
+      onSuccess: (_, id) => {
+        qc.invalidateQueries({ queryKey: ['orders'] })
+        customToast('success', `Order (ID: ${id}) deleted!`)
+      },
+      onError: (err, id) => {
+        customToast('error', `Failed to delete order (ID: ${id}): ${err.message}`)
+      }
+    })
+  )
+
+  return { fetchOne, create, update, remove }
 }

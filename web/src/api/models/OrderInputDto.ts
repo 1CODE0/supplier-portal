@@ -2,18 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { Supplier } from './Supplier';
-export type Order = {
-    createdAt?: string;
-    updatedAt?: string;
-    id?: string;
-    orderDate?: string;
-    status?: Order.status;
-    totalAmount?: number;
-    supplier?: Supplier;
-    description?: string;
+export type OrderInputDto = {
+    totalAmount: number;
+    supplierId: string;
+    status: OrderInputDto.status;
+    description: string;
 };
-export namespace Order {
+export namespace OrderInputDto {
     export enum status {
         PENDING = 'PENDING',
         CONFIRMED = 'CONFIRMED',

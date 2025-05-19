@@ -7,6 +7,9 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
-export type { Order } from './models/Order';
+export { Order } from './models/Order';
+export { OrderInputDto } from './models/OrderInputDto';
+export type { Supplier } from './models/Supplier';
 
 export { OrderControllerService } from './services/OrderControllerService';
+export { SupplierControllerService } from './services/SupplierControllerService';

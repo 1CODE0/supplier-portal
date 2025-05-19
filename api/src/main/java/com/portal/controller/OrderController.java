@@ -44,7 +44,7 @@ public class OrderController {
     // }
 
     @PostMapping("/orders/create")
-    public ResponseEntity<Order> createOrder(@RequestBody OrderInputDto dto) {
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody OrderInputDto dto) {
         Order created = orderService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }

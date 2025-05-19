@@ -847,14 +847,12 @@ CREATE TABLE suppliers (
 
   created_at    TIMESTAMPTZ     NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ     NOT NULL DEFAULT now(),
-  version       INT             NOT NULL DEFAULT 0
 );
 
 
 -- ─── 2. ORDERS ──────────────────────────────────────────────────────────────────
 CREATE TABLE orders (
   id            UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_date    TIMESTAMPTZ     NOT NULL DEFAULT now(),
   status        VARCHAR(20)     NOT NULL
                   CHECK (status IN ('NEW','PROCESSING','COMPLETE')),
   total_amount  NUMERIC(10,2)   NOT NULL,
@@ -867,7 +865,6 @@ CREATE TABLE orders (
 
   created_at    TIMESTAMPTZ     NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ     NOT NULL DEFAULT now(),
-  version       INT             NOT NULL DEFAULT 0
 );
 
 
@@ -880,7 +877,6 @@ CREATE TABLE users (
 
   created_at     TIMESTAMPTZ     NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ     NOT NULL DEFAULT now(),
-  version        INT             NOT NULL DEFAULT 0
 );
 
 

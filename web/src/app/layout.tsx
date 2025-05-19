@@ -1,41 +1,40 @@
-'use client'
+'use server'
 
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
-import { Providers } from '@/providers'
+import { cookies } from 'next/headers'
+import { SettingsProvider, ThemeMode } from '@/contexts/settingsContext'
+import ThemedAppContent from '@/components/ThemedAppContent'
+import { QueryProvider } from '@/providers/QueryProvider'
+import { AuthProvider } from '@/providers/AuthProvider'
+import { AuthGuard } from '@/components/AuthGuard'
 
-import { Box, Container, Typography } from '@mui/material'
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Server-side read
+  const cookieStore = await cookies()
+  const raw = cookieStore.get('appSettings')?.value
 
-const theme = createTheme({
-  palette: {
-    primary: { main: '#4F46E5' }, // Indigo
-    secondary: { main: '#10B981' }, // Emerald
-    error: { main: '#F43F5E' } // Rose
-  },
-  typography: {
-    fontFamily: 'Roboto, sans-serif'
+  let initialMode: ThemeMode = 'light'
+
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed.mode === 'dark') initialMode = 'dark'
+    } catch {
+      console.error('Invalid Json')
+    }
   }
-})
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en'>
       <body>
-        <Providers>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <header>
-              {/* You can swap AppBar for your own header */}
-              <Box component='header' sx={{ bgcolor: 'primary.main', color: '#fff', py: 2 }}>
-                <Container maxWidth='md'>
-                  <Typography variant='h6'>Smart Supplier Portal</Typography>
-                </Container>
-              </Box>
-            </header>
-            <Container maxWidth='md' sx={{ my: 4 }}>
-              {children}
-            </Container>
-          </ThemeProvider>
-        </Providers>
+        <QueryProvider>
+          <AuthProvider>
+            <AuthGuard>
+              <SettingsProvider initialMode={initialMode}>
+                <ThemedAppContent>{children}</ThemedAppContent>
+              </SettingsProvider>
+            </AuthGuard>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )

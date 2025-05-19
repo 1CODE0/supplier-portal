@@ -5,10 +5,19 @@ import java.util.UUID;
 
 import com.portal.enums.OrderStatus;
 
+import jakarta.validation.constraints.NotNull;
+
 public class OrderInputDto {
+    @NotNull(message = "totalAmount is required")
     private BigDecimal totalAmount;
+
+    @NotNull(message = "supplierId is required")
     private UUID supplierId;
+
+    @NotNull(message = "status cannot be null")
     private OrderStatus status;
+
+    @NotNull(message = "description cannot be null")
     private String description;
 
     public BigDecimal getTotalAmount() {
