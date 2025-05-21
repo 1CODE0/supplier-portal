@@ -1,4 +1,4 @@
-Updates over current plan:
+Updates over current plan For React+Vite:
 
 ## ✅ Week 1: Project Setup & PWA Spike
 
@@ -155,44 +155,200 @@ Updates over current plan:
 
 ---
 
-* **Week 1: Project Setup & PWA Spike**
 
-  * Bootstrap Spring Boot + JPA + PostgreSQL backend
-  * Initialize React (Vite + TS + Tailwind + MUI + TanStack Query)
-  * CRUD `/api/orders` endpoint & Swagger docs
-  * Spike: register Service Worker & cache React shell
+Here’s the seven-week roadmap refactored for **Next.js 15 only**, with both **local** (Docker Compose) and **cloud/free-tier** deployment paths baked in:
 
-* **Week 2: Database Modeling & Full CRUD**
+## ✅ Week 1: Project Setup & PWA Spike
 
-  * Provision Neon.tech Postgres; define `Supplier` & `Order` entities
-  * Build repos, service layer, controllers for both models
-  * Create React pages/forms (list, create, update, delete) with TanStack Query
+### Backend
 
-* **Week 3: Authentication & Authorization**
+* **Tech**: Spring Boot + Spring Data JPA
+* **Local**:
 
-  * Integrate Spring Security + Supabase JWT; secure all APIs
-  * Build login/register in frontend; store JWT; guard routes
+  * PostgreSQL container in Docker Compose
+  * Expose `/api/orders` CRUD
+  * Swagger/OpenAPI with SpringDoc
+* **Cloud**:
 
-* **Week 4: Event Streaming & Search**
+  * Neon.tech managed Postgres (free forever)
+  * Same Spring Boot image, point `SPRING_DATASOURCE_URL` at Neon
 
-  * Stand up Redpanda + Spring Kafka on order events
-  * Deploy Typesense; sync via Kafka; expose search endpoints
-  * Implement real-time debounced search UI
+### Frontend
 
-* **Week 5: Offline Capabilities**
+* **Tech**: Next.js 15 (App Router + Server Actions), TypeScript
+* **Styling**: TailwindCSS + MUI
+* **Data fetching**: TanStack Query (for client caching)
+* **PWA**:
 
-  * Full PWA: Workbox SW with precaching & runtime caching
-  * IndexedDB via Dexie.js; queue offline CRUD + sync handler
-  * Backend upserts for sync payloads
+  * Use `next-pwa` for SW registration, shell precaching & offline fallback
+  * Works identically in dev (`npm run dev`) and prod builds
 
-* **Week 6: Deployment & Nginx**
+### Local vs Cloud
 
-  * Dockerize services + Nginx (reverse proxy, SSL, static host)
-  * Deploy backend to Fly.io, frontend behind Nginx/Cloudflare Pages
-  * Configure caching, load balancing, SPA fallback
+| Layer    | Local Dev                              | Cloud/Free-Tier                   |
+| -------- | -------------------------------------- | --------------------------------- |
+| DB       | `postgres:15` container                | Neon.tech Postgres                |
+| Backend  | Docker Compose, `./backend/Dockerfile` | Fly.io/Railway free-tier deploy   |
+| Frontend | `next dev` inside Compose              | Vercel free-tier (Next.js native) |
 
-* **Week 7: Documentation, Testing & Monitoring**
+---
 
-  * Enhance Swagger/OpenAPI; Storybook for components
-  * Write unit (JUnit, RTL) & E2E tests (Cypress)
-  * Instrument Sentry (errors) & Prometheus/Grafana (metrics/alerts)
+## ✅ Week 2: Database Modeling & Full CRUD
+
+### Database
+
+* **Local**: Postgres with persistent volume
+* **Cloud**: Neon.tech Postgres
+
+### Backend
+
+* Define `Supplier` & `Order` entities, JPA repos, services, controllers
+* Use the **same** Docker image locally and on Fly.io/Railway
+
+### Frontend
+
+* Next.js App Routes + Server Actions to call `/api/...`
+* CRUD pages/forms for suppliers & orders
+* TanStack Query for optimistic updates & cache invalidation
+
+---
+
+## 🔐 Week 3: Authentication & Authorization
+
+### Auth Provider
+
+* **Local**:
+
+  * Option A: Supabase CLI in Docker (“local” mode)
+  * Option B: Keycloak container (fully open-source)
+* **Cloud**: Supabase Auth free-tier (hosted)
+
+### Backend
+
+* Spring Security validating Supabase-issued JWT via JWKS (or Keycloak JWKS)
+
+### Frontend
+
+* Next.js Middleware to protect app routes
+* Login/Register UI using Supabase JS client (or Keycloak OIDC client)
+* Store JWT in `localStorage`/`Session`
+
+---
+
+## 🛰️ Week 4: Event Streaming & Search
+
+### Event Streaming
+
+* **Local**:
+
+  * Zookeeper + Kafka or RabbitMQ via Compose
+  * Spring Kafka/Rabbit listener → emit WS/SSE to Next.js
+* **Cloud** (zero-ops):
+
+  * Postgres `LISTEN/NOTIFY` + Spring’s `@EventListener`
+  * Next.js subscribes via Server-Sent Events
+
+### Search
+
+* **Local**: OpenSearch container in Compose
+* **Cloud**:
+
+  * Postgres full-text search (GIN + `to_tsvector`)
+  * No extra service needed
+
+### Frontend
+
+* Real-time debounced search component hitting either OpenSearch API (local) or your Postgres search endpoint (cloud)
+
+---
+
+## 🔌 Week 5: Offline Capabilities
+
+* **PWA**: `next-pwa` runtime caching (Workbox under the hood)
+* **Storage**: Dexie.js IndexedDB queue (MIT)
+* **Sync Logic**:
+
+  * Queue mutations offline → replay via Next.js Server Actions when online
+  * Backend upserts handle conflicts
+
+Works identically Locally & in Cloud build.
+
+---
+
+## 🚀 Week 6: Deployment & Ingress
+
+### Local (Docker Compose)
+
+```yaml
+# docker-compose.yml snippet
+services:
+  postgres: …
+  zookeeper: …        # if using Kafka
+  kafka: …
+  open_search: …      # if chosen
+  supabase_cli: …     # or keycloak
+  backend:            # Spring Boot image
+  frontend:           # Next.js prod image
+  nginx:              # reverse proxy for SSL & routing
+```
+
+* **Nginx** routes `/api` → `backend:8080`, everything else → `frontend:3000`.
+
+### Cloud (Free-Tier)
+
+| Layer    | Service          | Notes                         |
+| -------- | ---------------- | ----------------------------- |
+| DB       | Neon.tech        | free Postgres                 |
+| Backend  | Fly.io / Railway | free container hosting        |
+| Frontend | Vercel           | native Next.js support + PWA  |
+| Auth     | Supabase Auth    | free-tier JWT + social logins |
+| CI/CD    | GitHub Actions   | build & deploy pipelines      |
+
+* **Vercel** handles SSL, CDN, routing – no Nginx needed externally.
+* **Nginx**:
+    * As reverse proxy
+    * With gzip, SSL, and SPA fallback config.
+* **Fly.io/Railway** give you HTTPS endpoint for Spring Boot.
+
+---
+
+## ✅ Week 7: Documentation, Testing & Monitoring
+
+### Documentation
+
+* Swagger UI (SpringDoc)
+* Storybook (MIT) for Next.js/MUI components
+
+### Testing
+
+* **Backend**: JUnit + MockMvc
+* **Frontend**: React Testing Library (works with Next.js) + Cypress E2E
+
+### Monitoring & Alerts
+
+* **Errors**: Sentry free-tier
+* **Uptime**: GitHub Actions scheduled pings or Uptime Kuma on local VM
+* **Metrics**:
+
+  * **Local**: Prometheus + Grafana containers
+  * **Cloud**: Use free-tier Grafana Cloud or skip for Postgres health checks
+
+---
+
+### 🧩 Unified Tooling Matrix
+
+| Feature   | Local Container                    | Cloud / Free-Tier      |
+| --------- | ---------------------------------- | ---------------------- |
+| DB        | Postgres:15 container              | Neon.tech Postgres     |
+| Backend   | Spring Boot Docker image           | Fly.io / Railway       |
+| Frontend  | Next.js 15 prod image + `next-pwa` | Vercel                 |
+| Styling   | TailwindCSS + MUI                  | Same                   |
+| Fetching  | TanStack Query                     | Same                   |
+| Auth      | Supabase CLI local or Keycloak     | Supabase Auth          |
+| Streaming | Kafka/RabbitMQ or LISTEN/NOTIFY    | Postgres LISTEN/NOTIFY |
+| Search    | OpenSearch container or PG FTS     | Postgres full-text     |
+| PWA       | next-pwa                           | next-pwa               |
+| Offline   | Dexie.js                           | Dexie.js               |
+| CI/CD     | GitHub Actions                     | GitHub Actions         |
+| Errors    | Sentry container or hosted         | Sentry free-tier       |
+| Metrics   | Prometheus + Grafana containers    | Grafana Cloud / skip   |
