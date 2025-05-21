@@ -94,3 +94,867 @@ public class Order extends Auditable {
     private UUID id;
     // … other fields …
 }
+
+Few new changes added :
+
+1. Single-flight + Controlled Retries (20 sec window)
+Problem: You want “keep retrying for up to 20 s” on network hiccups, but never fire more than one request at once.
+
+Solution:
+Leverage React-Query’s built-in retry logic, which is already serial (it won’t start a new retry before the prior one errors). Configure:
+
+useQuery<Order[], Error>({
+  queryKey: ["orders"],
+  queryFn: () => OrderControllerService.list(),
+  retry: 5,                       // total attempts = 1 initial + 5 retries
+  retryDelay: () => 4_000,        // 4 s between attempts → ~20 s total
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+Serial retries ensure only one in-flight call at a time.
+
+Fixed delays give you that 20 s window to recover from transient failures.
+
+You don’t need extra flags for “one request”—React-Query handles that for you.
+
+
+2. In Entity added an annotation ---> @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+
+Week2-day2:
+Thought for 4 seconds
+
+
+Here’s a step-by-step walkthrough to evolve your simple login into a more robust, production-ready flow—complete with proper loading states, validation, callback hooks, lazy loading, and in-UI tips.
+
+---
+
+## 1. Use React Hook Form for Validation & Performance
+
+Instead of tracking each field in state, **React Hook Form** gives you:
+
+* Built-in validation
+* Minimal re-rendering
+* Easy error messages
+
+```bash
+npm install react-hook-form
+```
+
+```tsx
+// src/pages/LoginPage.tsx
+'use client';
+import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import {
+  Button,
+  Paper,
+  Typography,
+  Box,
+  TextField,
+  CircularProgress,
+  Tooltip
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { useAuth } from '../providers/AuthProvider';
+import { useNavigate } from 'react-router-dom';
+
+interface FormValues {
+  username: string;
+}
+
+export const LoginPage: React.FC = () => {
+  const { login, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>();
+  
+  // Smart redirect if already logged in
+  useEffect(() => {
+    if (localStorage.getItem('user')) {
+      navigate('/orders', { replace: true });
+    }
+  }, [navigate]);
+
+  // Wrapped handler prevents re-creation on each render
+  const onSubmit = useCallback(async (data: FormValues) => {
+    await login(data.username);        // assume returns a Promise
+    navigate('/orders', { replace: true });
+  }, [login, navigate]);
+
+  return (
+    <Suspense fallback={<LoadingOverlay />}>
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto', mt: 10 }}>
+        <Typography variant="h5" gutterBottom fontWeight="bold">
+          Welcome to Smart Supplier Portal
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {/* Username field */}
+          <Controller
+            name="username"
+            control={control}
+            defaultValue=""
+            rules={{ required: 'Username is required' }}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Username"
+                variant="outlined"
+                error={!!errors.username}
+                helperText={errors.username?.message}
+                InputProps={{
+                  endAdornment: (
+                    <Tooltip title="Use your company-assigned login">
+                      <i className="ri-information-line" style={{ cursor: 'pointer' }} />
+                    </Tooltip>
+                  )
+                }}
+              />
+            )}
+          />
+
+          {/* Submit button with loading spinner */}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting || authLoading}
+            startIcon={(isSubmitting || authLoading) && <CircularProgress size={20} />}
+          >
+            {isSubmitting || authLoading ? 'Logging in…' : 'Login'}
+          </Button>
+        </Box>
+      </Paper>
+    </Suspense>
+  );
+};
+
+// A full-screen loading overlay for Suspense boundaries
+const LoadingOverlay: React.FC = () => (
+  <Box
+    sx={{
+      position: 'fixed',
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      zIndex: theme => theme.zIndex.modal,
+    }}
+  >
+    <CircularProgress size={60} />
+  </Box>
+);
+```
+
+**What’s happening here?**
+
+1. **`react-hook-form`** handles your form state & validation.
+2. The **`onSubmit`** is wrapped in `useCallback`—React can skip re-creating it across renders.
+3. **Loading states:**
+
+   * `isSubmitting` (from RHF) blocks double-submits.
+   * `authLoading` (from your auth provider) covers any async network latency.
+   * `CircularProgress` visually indicates progress.
+4. **Tooltips & tips:** A small “ℹ️” icon in the input gives contextual help.
+5. **`Suspense` boundary** around the page lets you lazy-load heavy subcomponents (we’ll wire that up next).
+
+---
+
+## 2. Lazy-Load Your Routes & Components
+
+Code-split your pages so the login bundle is tiny, and other pages load on demand:
+
+```tsx
+// src/App.tsx or your Routes file
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoadingOverlay from './components/LoadingOverlay';
+
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const OrdersPage = React.lazy(() => import('./pages/OrdersPage'));
+
+export const App = () => (
+  <BrowserRouter>
+    <Suspense fallback={<LoadingOverlay />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+      </Routes>
+    </Suspense>
+  </BrowserRouter>
+);
+```
+
+This means **only** the code you need for the login page downloads initially.
+
+---
+
+## 3. Auth Context with Callback Hooks
+
+In your `AuthProvider`:
+
+```ts
+// src/providers/AuthProvider.tsx
+'use client';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+
+interface AuthContextProps {
+  user: string | null;
+  login: (username: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be in AuthProvider');
+  return ctx;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<string | null>(localStorage.getItem('user'));
+  const [loading, setLoading] = useState(false);
+
+  const login = useCallback(async (username: string) => {
+    setLoading(true);
+    // simulate network / call your API
+    await new Promise(res => setTimeout(res, 800));
+    localStorage.setItem('user', username);
+    setUser(username);
+    setLoading(false);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('user');
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+```
+
+* **`useCallback`** ensures `login` & `logout` don’t re-create on every render, which helps any dependent `useEffect` hooks to stay stable.
+* **Centralized loading state** exposes a consistent spinner flag everywhere.
+
+---
+
+## 4. Putting It All Together
+
+* Wrap your app in `<AuthProvider>` and (if you haven’t already) a `<DrawerProvider>`.
+* Define a shared `LoadingOverlay` component for suspending.
+* Lazy load heavy pages/components.
+* Use **React Hook Form** + **MUI** for slick forms with inline validation & tooltips.
+
+This stack gives you:
+
+1. **Tiny initial bundles** (via lazy+Suspense).
+2. **Global async loading flags** (in `AuthProvider`).
+3. **Form performance & validation** without boilerplate.
+4. **DRY callbacks** with `useCallback`.
+5. **In-context tips** with MUI’s `Tooltip`.
+
+That should get you well on your way to a maintainable, fast, and user-friendly login—and a blueprint you can replicate across your entire site. Let me know if you’d like more detail on any piece!
+
+
+final must do optimizations for week-2:
+You’re already on the right track by centralizing all your data‐fetch and mutation logic into a single “suppliers” hooks file, and using a helper to normalize your `UseMutationResult` into a consistent shape. Here are a few thoughts and tweaks to make it even more robust, type-safe, and “plug-and-play”:
+
+---
+
+## 1. **Tighten Up Your `mapMutation`**
+
+Right now you’re mapping `mutation.isPending` → `isLoading`. React Query’s API is officially `isLoading` / `isError` / `isSuccess` / `isIdle` / `isFetching`. I’d mirror those names exactly to avoid confusion:
+
+```ts
+function mapMutation<
+  TData,
+  TError,
+  TVariables,
+  TContext = unknown
+>(
+  m: UseMutationResult<TData, TError, TVariables, TContext>
+) {
+  return {
+    mutate:   m.mutateAsync,
+    isIdle:   m.isIdle,
+    isLoading: m.isLoading,  // instead of isPending
+    isError:  m.isError,
+    error:    m.error,
+    isSuccess:m.isSuccess,
+    data:     m.data,
+  };
+}
+```
+
+---
+
+## 2. **Combine `useSupplierActions` Into `useSupplier`**
+
+Rather than a separate “actions” hook, you can bundle **fetch**, **create**, **update**, and **delete** all under one `useSupplier` hook (or `useSuppliers` if you prefer):
+
+```ts
+export function useSuppliers() {
+  const qc = useQueryClient();
+
+  const list = useQuery<Supplier[], Error>({
+    queryKey: ['suppliers'],
+    queryFn: () => SupplierControllerService.listSuppliers(),
+    staleTime: 300_000,
+  });
+
+  const fetchOne = (id: string) =>
+    qc.fetchQuery<Supplier, Error>({
+      queryKey: ['supplier', id],
+      queryFn: () => SupplierControllerService.getSupplierById(id),
+      staleTime: 120_000,
+    });
+
+  const create = mapMutation(
+    useMutation(
+      (data: Supplier) => SupplierControllerService.createSupplier(data),
+      {
+        onSuccess: () => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', 'Supplier created!');
+        },
+      }
+    )
+  );
+
+  const update = mapMutation(
+    useMutation(
+      ({ id, data }: { id: string; data: Supplier }) =>
+        SupplierControllerService.updateSupplier(id, data),
+      {
+        onSuccess: () => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', 'Supplier updated!');
+        },
+      }
+    )
+  );
+
+  const remove = mapMutation(
+    useMutation(
+      (id: string) => SupplierControllerService.deleteSupplier(id),
+      {
+        onSuccess: (_, id) => {
+          qc.invalidateQueries(['suppliers']);
+          customToast('success', `Supplier ${id} deleted!`);
+        },
+      }
+    )
+  );
+
+  return { list, fetchOne, create, update, remove };
+}
+```
+
+**Usage**:
+
+```ts
+const { list, fetchOne, create, update, remove } = useSuppliers();
+
+// List page
+const { data: suppliers, isLoading } = list;
+
+// Detail/Edit page
+useEffect(() => {
+  if (id) {
+    fetchOne(id).then(supp => reset(mapToForm(supp)));
+  }
+}, [id]);
+
+// Form submit
+if (id) await update.mutate({ id, data: _data });
+else    await create.mutate(_data);
+
+// Delete
+remove.mutate(id);
+```
+
+---
+
+## 3. **Prefetch + `useQuery` in Forms**
+
+Instead of manually calling `fetchOne` inside an effect, you can turn that into a React Query powered form hook:
+
+```ts
+export function useSupplierForm(id?: string) {
+  const { fetchOne, create, update } = useSuppliers();
+
+  // this will cache the supplier and give you typed data
+  const { data, isFetching } = useQuery(
+    ['supplier', id],
+    () => fetchOne(id!),
+    { enabled: Boolean(id) }
+  );
+
+  const save = id
+    ? (data: Supplier) => update.mutateAsync({ id: id!, data })
+    : (data: Supplier) => create.mutateAsync(data);
+
+  return { data, isFetching, save };
+}
+```
+
+Then in your page:
+
+```tsx
+const { control, handleSubmit, reset } = useForm<SupplierInput>({ resolver });
+const { data: supplier, isFetching, save } = useSupplierForm(id);
+
+useEffect(() => {
+  if (supplier) reset(mapToForm(supplier));
+}, [supplier]);
+
+const onSubmit = (values: SupplierInput) =>
+  save(transform(values)).then(() => navigate(…));
+```
+
+---
+
+## 4. **Why This Is More Robust**
+
+* **One Hook** (`useSuppliers`) for all CRUD keeps naming consistent and centralizes query invalidations.
+* **Strong Typing** everywhere—no `unknown` creeping in.
+* **React Query Auto-cancellations**: switching pages, unmounting, etc.
+* **Consistent API Shape**: `list`, `fetchOne`, `create`, `update`, `remove` everywhere.
+* **Form-friendly**: `useSupplierForm` wraps fetch + save logic, so your pages/forms stay ultra-lean.
+
+---
+
+### TL;DR
+
+Keep your CRUD in one hook (or two if you want to separate list vs. single-entity), mirror React Query’s status flags, and add a little helper hook for forms. This gives you a rock-solid, type-safe, DRY setup that’s trivial to use in lists, details, and forms.
+
+Good question. The `valueSources` and other props in React Awesome Query Builder (`Fields`) configs control **how the value for a rule can be entered**, what **input UI widget** is used, what **operators** are allowed, and how the logic should behave in the query. Here's a breakdown of the most commonly used ones and what they do — **no sugar, just straight utility**:
+
+---
+
+*********************** In case if you need some React Awesome Query Builder (basically a JS to SQL commands converter)
+### 🔹 `valueSources: ['value']`
+
+This defines **where the user can get the value from**. Typical values:
+
+* `'value'` → User manually types or selects a value.
+* `'field'` → Value comes from another field (i.e., compare two fields).
+* `'func'` → Value comes from a function (e.g., `NOW()`, `TODAY()`, etc.).
+
+**Example:**
+
+```ts
+valueSources: ['value']  // user selects or types a literal value
+```
+
+If you include multiple:
+
+```ts
+valueSources: ['value', 'field']  // user can choose between entering a value or referencing another field
+```
+
+---
+
+### 🔹 `type`
+
+Defines the **data type** of the field, which determines default operators and widgets.
+
+* `'text'`
+* `'number'`
+* `'select'`
+* `'boolean'`
+* `'date'`
+* `'datetime'`
+* `'time'`
+* `'multiselect'`
+
+---
+
+### 🔹 `operators`
+
+List of **comparison operations** allowed on this field.
+
+* For `'text'`: `['equal', 'not_equal', 'contains']`
+* For `'number'`: `['equal', 'less', 'greater']`
+* For `'boolean'`: `['equal']`
+
+**Example:**
+
+```ts
+operators: ['equal', 'not_equal', 'is_empty']
+```
+
+---
+
+### 🔹 `widgets`
+
+Customize the UI input widget per type or operator. You can override the default component.
+
+```ts
+widgets: {
+  text: {
+    widgetProps: {
+      maxLength: 50
+    }
+  }
+}
+```
+
+---
+
+### 🔹 `fieldSettings`
+
+Fine-tune field behavior: min/max for numbers, format for dates, etc.
+
+**Example:**
+
+```ts
+fieldSettings: {
+  min: 1,
+  max: 100,
+  step: 1
+}
+```
+
+---
+
+### 🔹 `listValues`
+
+Only applies when `type: 'select'` or `multiselect`. It's the list of allowed values.
+
+**Example:**
+
+```ts
+listValues: {
+  active: 'Active',
+  inactive: 'Inactive'
+}
+```
+
+Or in array format:
+
+```ts
+listValues: [
+  { value: 'active', title: 'Active' },
+  { value: 'inactive', title: 'Inactive' }
+]
+```
+
+---
+
+### 🔹 `defaultOperator`, `defaultValue`, `defaultValueSrc`
+
+Self-explanatory: used to initialize a rule.
+
+---
+
+### TL;DR Table
+
+| Prop            | Purpose                                           |
+| --------------- | ------------------------------------------------- |
+| `valueSources`  | Where value can come from (`value`, `field`, etc) |
+| `type`          | Field data type (`text`, `number`, etc)           |
+| `operators`     | Allowed rule operators                            |
+| `fieldSettings` | Field-specific settings (min, max, format)        |
+| `listValues`    | Options for select fields                         |
+| `widgets`       | Customize the input widget                        |
+| `defaultValue`  | Initial value for rule                            |
+
+---
+
+Things remaining after week-2
+✅ Week 2: Database Modeling & Full CRUD
+
+Database
+- [x] Use Neon.tech (PostgreSQL, free tier)
+- [x] Schema for Supplier and Order
+- [ ] Dev seeding / mock data for frontend
+
+Backend
+- [x] Supplier & Order entities
+- [x] Repositories, services, controllers
+- [ ] DTOs + mappers
+- [ ] Input validation (javax.validation)
+- [ ] Global error handling
+- [ ] Integration/unit tests
+
+Frontend
+- [x] CRUD pages (list, form views)
+- [x] TanStack Query for fetching/mutations
+- [ ] Form validation (Zod/Yup + RHF)
+- [ ] Loading & error states
+- [ ] API abstraction layer
+- [ ] Toaster/snackbar UX
+- [ ] Delete confirmation modals
+
+
+
+FOR Backend:
+Alright, let’s break it down and set this up **cleanly and scalably**. You’re using Spring Boot, so I’ll assume Java (not Kotlin), and you’ve already got entities, services, and controllers wired. Let’s take `Supplier` as the example entity to implement:
+
+---
+
+## ✅ 1. DTOs + Mappers
+
+### 📁 Directory structure suggestion:
+
+```
+src/
+└── main/
+    └── java/
+        └── com/yourorg/portal/
+            ├── dto/
+            │   └── SupplierDTO.java
+            ├── mapper/
+            │   └── SupplierMapper.java
+            └── model/
+                └── Supplier.java
+```
+
+### 🔹 `SupplierDTO.java`
+
+```java
+public class SupplierDTO {
+    private Long id;
+
+    @NotBlank(message = "Supplier name is required")
+    private String name;
+
+    @Email(message = "Email must be valid")
+    private String email;
+
+    private String address;
+
+    // Getters and setters
+}
+```
+
+> You could split into `CreateSupplierDTO` and `UpdateSupplierDTO` later if needed.
+
+---
+
+### 🔹 `SupplierMapper.java` (Manual for now)
+
+```java
+public class SupplierMapper {
+
+    public static SupplierDTO toDTO(Supplier supplier) {
+        SupplierDTO dto = new SupplierDTO();
+        dto.setId(supplier.getId());
+        dto.setName(supplier.getName());
+        dto.setEmail(supplier.getEmail());
+        dto.setAddress(supplier.getAddress());
+        return dto;
+    }
+
+    public static Supplier toEntity(SupplierDTO dto) {
+        Supplier supplier = new Supplier();
+        supplier.setId(dto.getId()); // Optional: skip for create
+        supplier.setName(dto.getName());
+        supplier.setEmail(dto.getEmail());
+        supplier.setAddress(dto.getAddress());
+        return supplier;
+    }
+}
+```
+
+> If you're sick of writing mappers, use [MapStruct](https://mapstruct.org/), but manual is fine for now.
+
+---
+
+## ✅ 2. Input Validation (`javax.validation`)
+
+### 🧩 Add validation dependency (if not already)
+
+```xml
+<dependency>
+    <groupId>jakarta.validation</groupId>
+    <artifactId>jakarta.validation-api</artifactId>
+</dependency>
+```
+
+Usually it’s already included via Spring Boot starter.
+
+### 🔧 Modify your controller:
+
+```java
+@PostMapping
+public ResponseEntity<SupplierDTO> createSupplier(@Valid @RequestBody SupplierDTO dto) {
+    Supplier supplier = SupplierMapper.toEntity(dto);
+    Supplier saved = supplierService.save(supplier);
+    return ResponseEntity.ok(SupplierMapper.toDTO(saved));
+}
+```
+
+> The `@Valid` tells Spring to validate the incoming DTO before the method runs.
+
+---
+
+## ✅ 3. Global Error Handling
+
+### 🔹 `GlobalExceptionHandler.java`
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            errors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleOtherErrors(Exception ex) {
+        // Log exception here
+        return new ResponseEntity<>("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+
+what remains !!!
+Perfect. Here's how to set up **local PostgreSQL in Docker** for offline development, matching your Neon schema as closely as possible.
+
+---
+
+## 🐳 Step-by-Step: PostgreSQL via Docker
+
+### ✅ 1. Create a Docker Compose file
+
+**`docker-compose.yml`**
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: local_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: supplier_portal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+```
+
+> This will spin up a local Postgres 16 instance, exposed on `localhost:5432`.
+
+---
+
+### ✅ 2. Add Schema Seeding (optional but smart)
+
+Create a directory `init/` and place a schema file in it:
+
+**`init/schema.sql`**
+
+```sql
+CREATE TABLE suppliers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    address TEXT
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    supplier_id INTEGER NOT NULL REFERENCES suppliers(id),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+> These run automatically when the container starts (on a fresh volume).
+
+---
+
+### ✅ 3. Run it
+
+```bash
+docker compose up -d
+```
+
+To stop:
+
+```bash
+docker compose down
+```
+
+To nuke data and start fresh:
+
+```bash
+docker compose down -v
+```
+
+---
+
+### ✅ 4. Configure Spring Boot for Local
+
+**`application-local.properties`**
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/supplier_portal
+spring.datasource.username=devuser
+spring.datasource.password=devpass
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+```
+
+Launch with:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+or set `SPRING_PROFILES_ACTIVE=local` in your `.env`.
+
+---
+
+### ✅ 5. (Optional) pgAdmin for UI Access
+
+Add to `docker-compose.yml` if you want a visual DB tool:
+
+```yaml
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+```
+
+Then go to `http://localhost:5050` and connect to:
+
+* Host: `host.docker.internal` (on Windows/Mac) or `localhost`
+* Port: `5432`
+* User/pass: `devuser` / `devpass`
+
+---
+
+Let me know if you want this integrated with Flyway migrations or pre-filled with mock supplier/order data.
+
+
+see what if i have to send a build to some place so that they can run it locally for DB ,frontend ,backend all inclusive (separate builds allowed or one single for all of them if possible) how to achieve that step by step  think and plan accordingly i want a bundle(or 3) which i can execute on any machine or deploy on cloud to get it working 
+rm -rf ~/.m2/repository/org/springframework
+rm -rf ~/.m2/repository/org/springdoc
+rm -rf ~/.m2/repository/jakarta

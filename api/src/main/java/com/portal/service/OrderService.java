@@ -1,19 +1,20 @@
 package com.portal.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.portal.enums.OrderStatus;
+import com.portal.dto.OrderInputDto;
 import com.portal.exception.BadRequestException;
 import com.portal.exception.NotFoundException;
 import com.portal.model.Order;
 import com.portal.model.Supplier;
 import com.portal.repository.OrderRepository;
 import com.portal.repository.SupplierRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class OrderService {
@@ -37,28 +38,31 @@ public class OrderService {
         return orderRepository.findBySupplierId(supplierId);
     }
 
-    public Order create(Order o) {
-        UUID supplierId = Optional.ofNullable(o.getSupplier())
-                .map(Supplier::getId)
-                .orElseThrow(() -> new BadRequestException("Supplier ID is required"));
+    @Transactional
+    public Order create(OrderInputDto dto) {
+        UUID supplierId = Optional.ofNullable(dto.getSupplierId())
+                .orElseThrow(() -> new BadRequestException("supplierId is required"));
 
         Supplier supplier = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new NotFoundException("Supplier not found: " + supplierId));
 
-        o.setSupplier(supplier);
-        o.setOrderDate(LocalDateTime.now());
-        o.setStatus(OrderStatus.DRAFT);
+        Order order = new Order();
+        order.setTotalAmount(dto.getTotalAmount());
+        order.setStatus(dto.getStatus());
+        order.setDescription(dto.getDescription());
+        order.setSupplier(supplier);
 
-        return orderRepository.save(o);
+        return orderRepository.save(order);
     }
 
-    public Order update(UUID id, Order o) {
+    public Order update(UUID id, OrderInputDto dto) {
         Order existing = getById(id);
-        existing.setStatus(o.getStatus());
-        existing.setTotalAmount(o.getTotalAmount());
-        existing.setDescription(o.getDescription());
+        existing.setStatus(dto.getStatus());
+        existing.setTotalAmount(dto.getTotalAmount());
+        existing.setDescription(dto.getDescription());
 
-        UUID supplierId = o.getSupplier().getId();
+        UUID supplierId = Optional.ofNullable(dto.getSupplierId())
+                .orElseThrow(() -> new BadRequestException("supplierId is required"));
 
         Supplier supplier = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new NotFoundException("Supplier not found: " + supplierId));

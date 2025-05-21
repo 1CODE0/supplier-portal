@@ -1,5 +1,6 @@
 package com.portal.controller;
 
+import com.portal.dto.OrderInputDto;
 import com.portal.model.Order;
 import com.portal.service.OrderService;
 
@@ -14,48 +15,48 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api")
 public class OrderController {
-    private final OrderService svc;
+    private final OrderService orderService;
 
-    public OrderController(OrderService svc) {
-        this.svc = svc;
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
     }
 
-    @GetMapping
+    @GetMapping("/orders")
     public List<Order> list() {
-        return svc.getAll();
+        return orderService.getAll();
     }
 
-    @GetMapping("/supplier/{supplierId}")
+    @GetMapping("/orders/supplier/{supplierId}")
     public List<Order> listBySupplier(@PathVariable UUID supplierId) {
-        return svc.getBySupplier(supplierId);
+        return orderService.getBySupplier(supplierId);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/orders/{id}")
     public Order getOrderById(@PathVariable UUID id) {
-        return svc.getById(id);
+        return orderService.getById(id);
     }
 
     // @PostMapping
     // public Order createOrder(@RequestBody @Valid Order o) {
-    // return svc.create(o);
+    // return orderService.create(o);
     // }
 
-    @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Order o) {
-        Order created = svc.create(o);
+    @PostMapping("/orders/create")
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody OrderInputDto dto) {
+        Order created = orderService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PutMapping("/{id}")
-    public Order updateOrder(@PathVariable UUID id, @RequestBody @Valid Order o) {
-        return svc.update(id, o);
+    @PutMapping("/orders/update/{id}")
+    public Order updateOrder(@PathVariable UUID id, @RequestBody @Valid OrderInputDto dto) {
+        return orderService.update(id, dto);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/orders/delete/{id}")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteOrder(@PathVariable UUID id) {
-        svc.delete(id);
+        orderService.delete(id);
     }
 }

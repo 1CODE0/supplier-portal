@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/suppliers")
+@RequestMapping("/api")
 public class SupplierController {
     private final SupplierService svc;
 
@@ -22,27 +22,27 @@ public class SupplierController {
         this.svc = svc;
     }
 
-    @GetMapping
+    @GetMapping("/suppliers")
     public List<Supplier> listSuppliers() {
         return svc.getAll();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/suppliers/{id}")
     public Supplier getSupplierById(@PathVariable UUID id) {
         return svc.getById(id);
     }
 
-    @PostMapping
+    @PostMapping("/suppliers/create")
     public Supplier createSupplier(@RequestBody @Valid Supplier s) {
         return svc.create(s);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/suppliers/update/{id}")
     public Supplier updateSupplier(@PathVariable UUID id, @RequestBody @Valid Supplier s) {
         return svc.update(id, s);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/suppliers/delete/{id}")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteSupplier(@PathVariable UUID id) {
         svc.delete(id);
