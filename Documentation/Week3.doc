@@ -1,0 +1,128 @@
+
+Finishing up path polishing for  the project:
+
+
+Here’s a rundown of the **next‑level polish** you can add around your App Router, so every corner case is covered and your app feels rock‑solid:
+
+---
+
+## 1. **Global Error & Loading Boundaries**
+
+With App Router you get **file‑based** loading and error UI out of the box. In each folder you can add:
+
+```
+app/
+├── layout.tsx          ← root layout
+├── error.tsx           ← global error boundary
+├── loading.tsx         ← global loading UI
+├── not-found.tsx       ← 404 page
+├── orders/
+│   ├── layout.tsx      ← orders sub‑layout
+│   ├── page.tsx        ← list
+│   ├── [id]/
+│   │   ├── page.tsx    ← detail/edit
+│   │   └── loading.tsx ← per‑route loading
+│   └── error.tsx       ← orders‑specific error
+└── login/
+    └── page.tsx
+```
+
+* **`loading.tsx`**: shows during async data fetches (e.g. fetching orders).
+* **`error.tsx`**: catches render or data‑fetch errors and lets you display a retry button.
+* **`not-found.tsx`**: for dynamic routes when no resource exists (e.g. bad `/orders/12345`).
+
+This gives you **built‑in**, route‑scoped UX for every async boundary and 404.
+
+---
+
+## 2. **Catch‑all “404” for Truly Unknown Routes**
+
+Create `app/not-found.tsx` (outside any folder). Next will show it whenever someone visits a path that doesn’t match any route.
+
+```tsx
+// app/not-found.tsx
+export default function NotFound() {
+  return (
+    <MainLayout>
+      <Typography variant="h4">404 — Page Not Found</Typography>
+      <Button href="/">Go Home</Button>
+    </MainLayout>
+  );
+}
+```
+
+---
+
+## 3. **Use Route Groups & Named Layouts**
+
+If you start growing areas (e.g. `/admin`, `/app`, `/docs`), put them in **route groups** `(admin)/` so they don’t show up in URL:
+
+```
+app/
+ ├── (public)/
+ │   ├── login/page.tsx
+ └── (app)/            ← all protected routes
+     ├── layout.tsx    ← wraps AuthGuard, NavBar, etc.
+     ├── orders/…
+     └── settings/…
+```
+
+This keeps your URL space clean and lets you apply middleware/layout only to `(app)`.
+
+---
+
+## 4. **Edge Case Hooks**
+
+* **`useSearchParams`**, **`usePathname`**, **`useRouter`**: read query or fragment, update URLs without reload.
+* **`useSelectedLayoutSegment()`**: highlight active menu items based on the layout tree.
+* **`usePrevious()`**, **`usePageVisibility()`**: detect tab switching, prompt unsaved changes modals.
+
+---
+
+## 5. **Global State & Side‑Effects**
+
+* **React Query** for all data: give you cache, stale‑while‑revalidate, prefetching on hover.
+* **Error reporting**: integrate Sentry or Datadog in your `error.tsx` boundaries.
+* **Health checks**: a simple fetch to `/api/health` in your layout to confirm backend connectivity.
+
+---
+
+## 6. **Stability & Monitoring**
+
+* **TypeScript strict mode** + ESLint + Prettier + Husky pre‑commit hooks.
+* **Unit & integration tests** for critical flows (login, order CRUD).
+* **End‑to‑end tests** (Playwright or Cypress) to exercise the real UI.
+* **Performance budgets**: Lighthouse CI, bundled‑size tracking.
+
+---
+
+## 7. **Accessibility & Internationalization**
+
+* **`<head>` overrides**: use `generateMetadata` in each route for SEO and meta tags.
+* **ARIA**: your custom dialogs and loaders already use ARIA props.
+* **i18n**: Next’s built‑in `app/i18n.ts` and `next.config.js` locales for multi‑language support.
+
+---
+
+### Quick Checklist
+
+1. ✅ **`loading.tsx`** & **`error.tsx`** in each folder
+2. ✅ **Global `not-found.tsx`**
+3. ✅ **Route groups** for public vs. protected
+4. ✅ **AuthGuard** in `(app)/layout.tsx`
+5. ✅ **React Query mutations/queries** with retries/error boundaries
+6. ✅ **Sentry/analytics** in your `error.tsx`
+7. ✅ **TypeScript strict** + linting + tests
+8. ✅ **Performance monitoring** + CI/CD integration
+
+---
+
+Once you’ve slotted those in, you’ll have:
+
+* **Zero flash** thanks to loading boundaries
+* **Graceful errors** at every level
+* **Clean URL structure** with route groups
+* **Observability** for performance and errors
+* **Enterprise‑grade** testing and linting
+
+That covers the “all‑paths” and “edge cases” part. Let me know if you want code snippets for any specific boundary or testing setup next!
